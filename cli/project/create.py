@@ -36,7 +36,6 @@ def load_template(template: str) -> Dict[str, str]:
 
 
 def create_project(path: Path, template: str) -> None:
-    click.echo(f"+ Using directory: {path.absolute()}")
     click.echo(
         f"+ Creating a new LaTeX project using the {template} template...")
 
