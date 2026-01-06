@@ -1,0 +1,9 @@
+# Compilation directories
+compiles/
+cache/
+
+# Temporary clone directories (if any)
+overleaf-temp/
+temp-clone/
+
+
