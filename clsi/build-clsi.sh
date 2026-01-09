@@ -48,6 +48,12 @@ git sparse-checkout set --no-cone \
     exit 1
 }
 
+echo "Pulling texlive/texlive image..."
+docker pull texlive/texlive || {
+    echo "Error: Failed to pull texlive/texlive image"
+    exit 1
+}
+
 # Build the Docker image
 echo "Building Docker image..."
 docker build -t "${IMAGE_NAME}:${IMAGE_TAG}" -f services/clsi/Dockerfile . || {

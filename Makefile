@@ -5,6 +5,9 @@
 dev:
 	uv run latex-chatbot --dir=temp $(filter-out $@,$(MAKECMDGOALS))
 
+build:
+	uv build
+
 clsi-build:
 	@echo "Building CLSI Docker image..."
 	@./clsi/build-clsi.sh
