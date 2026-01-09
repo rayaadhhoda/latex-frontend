@@ -3,6 +3,7 @@ import click
 from cli import __version__, compiler
 from cli import project
 from cli import settings
+from cli.chat import chatbot
 
 
 @click.group()
@@ -46,15 +47,19 @@ def compile(ctx):
     dir = ctx.obj['dir']
     compiler.compile_project(dir)
 
+
 @cli.command()
 @click.argument("query", required=True)
 @click.pass_context
 def chat(ctx, query):
     """Chat with the LaTeX chatbot."""
-    if not query:
-        click.echo("Error: Missing required arguments: query", err=True)
+    dir = ctx.obj['dir']
+    try:
+        response = chatbot.chat_with_project(dir, query)
+        click.echo(response)
+    except Exception as e:
+        click.echo(f"+ Error: {str(e)}", err=True)
         raise click.Abort()
-    click.echo(f"Query: {query}")
 
 
 @cli.command()

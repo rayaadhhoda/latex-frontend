@@ -17,6 +17,21 @@
       ],
       "justMyCode": true,
       "console": "integratedTerminal"
-    }
+    },
+    {
+      "name": "Python: Chat with LaTeX Project",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/cli/main.py",
+      "preLaunchTask": "build",
+      "args": [
+        "--dir",
+        "temp",
+        "chat",
+        "Add a new section to the document called 'Conclusion' with this content: This is a conclusion."
+      ],
+      "justMyCode": true,
+      "console": "integratedTerminal"
+    },
   ]
 }
