@@ -2,8 +2,11 @@
 %:
 	@:
 
-dev:
+cli:
 	uv run latex-chatbot --dir=temp $(filter-out $@,$(MAKECMDGOALS))
+
+dev:
+	uv run latex-chatbot-gui
 
 build:
 	uv build
