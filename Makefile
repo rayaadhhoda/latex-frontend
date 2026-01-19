@@ -3,21 +3,30 @@
 	@:
 
 cli:
-	uv run latex-chatbot --dir=temp $(filter-out $@,$(MAKECMDGOALS))
+	cd editor-cli && uv run latex-chatbot --dir=temp $(filter-out $@,$(MAKECMDGOALS))
 
 dev:
-	uv run latex-chatbot-gui
+	cd editor-gui && npm run tauri dev
 
 build:
-	uv build
+	@uv run build.py
+
+cli-build:
+	@cd editor-cli && uv run build.py
+
+gui-build:
+	@cd editor-gui && npm run tauri build
+
+cli-build:
+	@cd editor-cli && uv run build.py
 
 clsi-build:
 	@echo "Building CLSI Docker image..."
-	@./clsi/build-clsi.sh
+	@./editor-cli/clsi/build-clsi.sh
 
 clsi-up:
-	@docker compose -f clsi/docker-compose.yml down
-	@docker compose -f clsi/docker-compose.yml up -d
+	@docker compose -f editor-cli/clsi/docker-compose.yml down
+	@docker compose -f editor-cli/clsi/docker-compose.yml up -d
 
 clsi-down:
-	docker compose -f clsi/docker-compose.yml down
+	docker compose -f editor-cli/clsi/docker-compose.yml down

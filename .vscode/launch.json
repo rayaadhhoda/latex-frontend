@@ -5,20 +5,11 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python: Run GUI",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${workspaceFolder}/gui/main.py",
-      "preLaunchTask": "build",
-      "justMyCode": true,
-      "console": "integratedTerminal"
-    },
-    {
       "name": "Python: Compile LaTeX Project",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/cli/main.py",
-      "preLaunchTask": "build",
+      "preLaunchTask": "cli-build",
       "args": [
         "--dir",
         "temp",
@@ -32,7 +23,7 @@
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/cli/main.py",
-      "preLaunchTask": "build",
+      "preLaunchTask": "cli-build",
       "args": [
         "--dir",
         "temp",
