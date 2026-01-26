@@ -9,11 +9,14 @@ dependencies = [
     "platformdirs>=4.5.1",
     "pydantic-ai-slim[openrouter]>=1.47.0",
     "tomlkit>=0.13.3",
-    "genai_prices"
+    "genai_prices",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.34.0",
 ]
 
 [project.scripts]
 latex-chatbot = "cli.main:cli"
+latex-chatbot-server = "cli.server:main"
 
 [build-system]
 requires = ["hatchling"]

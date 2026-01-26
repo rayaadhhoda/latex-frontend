@@ -25,9 +25,8 @@ async function request<T>(
   return res.json();
 }
 
-export async function health(): Promise<{ status: string; version: string }> {
-  const res = await fetch(`${API_BASE}/health`);
-  return res.json();
+export async function health(): Promise<ApiResponse<{ status: string; version: string }>> {
+  return request("/health");
 }
 
 export async function initProject(

@@ -115,7 +115,7 @@ def build_pyinstaller(target_triple: str) -> Path:
     ]
     for module in copy_metadata:
         cmd.extend(["--copy-metadata", module])
-    cmd.append("cli/main.py")
+    cmd.append("cli/server.py")
 
     # Run PyInstaller via uv to use the dev dependency
     run(cmd, cwd=CLI_DIR)
