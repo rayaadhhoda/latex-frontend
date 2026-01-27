@@ -50,18 +50,18 @@ pub fn run() {
             println!("Server started on http://127.0.0.1:8765");
             Ok(())
         })
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { .. } = event {
-                // Kill the server when the window is closed
-                let state = window.state::<ServerState>();
+        .invoke_handler(tauri::generate_handler![greet])
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            if let tauri::RunEvent::Exit = event {
+                // Kill the server when the app exits (handles Ctrl+C and all exit paths)
+                let state = app_handle.state::<ServerState>();
                 let mut guard = state.0.lock().unwrap();
                 if let Some(child) = guard.take() {
                     let _ = child.kill();
                     println!("Server stopped");
                 }
             }
-        })
-        .invoke_handler(tauri::generate_handler![greet])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        });
 }

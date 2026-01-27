@@ -1,6 +1,8 @@
 from pathlib import Path
 import os
 import sys
+import threading
+import time
 
 if getattr(sys, "frozen", False):
     os.environ.setdefault("PYDANTIC_DISABLE_PLUGINS", "1")
@@ -13,6 +15,25 @@ from core import __version__, compiler
 from core import project
 from core import settings
 from core.chat import chatbot
+
+
+def _start_parent_watcher():
+    """Watch parent process and exit if it dies (becomes pid 1 or no longer exists)."""
+    parent_pid = os.getppid()
+
+    def watcher():
+        while True:
+            time.sleep(1)
+            current_parent = os.getppid()
+            # On Unix, when parent dies, ppid becomes 1 (init/launchd)
+            if current_parent != parent_pid or current_parent == 1:
+                os._exit(0)
+
+    thread = threading.Thread(target=watcher, daemon=True)
+    thread.start()
+
+
+_start_parent_watcher()
 
 app = FastAPI(title="LaTeX Chatbot API", version=__version__)
 
