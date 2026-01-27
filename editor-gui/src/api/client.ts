@@ -8,7 +8,7 @@ interface ApiResponse<T = unknown> {
 
 async function request<T>(
   endpoint: string,
-  options?: RequestInit
+  options: RequestInit
 ): Promise<ApiResponse<T>> {
   const res = await fetch(`${API_BASE}${endpoint}`, {
     headers: {
@@ -25,26 +25,32 @@ async function request<T>(
   return res.json();
 }
 
-export async function health(): Promise<ApiResponse<{ status: string; version: string }>> {
-  return request("/health");
+export async function health(
+  options: RequestInit,
+): Promise<ApiResponse<{ status: string; version: string }>> {
+  return request("/health", options);
 }
 
 export async function initProject(
   dir: string,
-  template: string = "default"
+  template: string = "default",
+  options?: RequestInit,
 ): Promise<ApiResponse<{ message: string }>> {
   return request("/init", {
     method: "POST",
     body: JSON.stringify({ dir, template }),
+    ...options,
   });
 }
 
 export async function compileProject(
-  dir: string
+  dir: string,
+  options?: RequestInit,
 ): Promise<ApiResponse<{ result: string }>> {
   return request("/compile", {
     method: "POST",
     body: JSON.stringify({ dir }),
+    ...options,
   });
 }
 
@@ -58,6 +64,13 @@ export async function chat(
   });
 }
 
+export async function listFiles(
+  dir: string,
+  options: RequestInit,
+): Promise<ApiResponse<{ files: string[] }>> {
+  return request(`/files?dir=${encodeURIComponent(dir)}`, options);
+}
+
 export interface ConfigData {
   openai_api_base?: string;
   openai_api_key?: string;
@@ -66,8 +79,8 @@ export interface ConfigData {
 }
 
 export async function getConfig(
-  key?: string,
-  options?: RequestInit,
+  key: string | null,
+  options: RequestInit,
 ): Promise<ApiResponse<{ config: ConfigData }>> {
   const endpoint = key ? `/config?key=${encodeURIComponent(key)}` : "/config";
   return request(endpoint, options);

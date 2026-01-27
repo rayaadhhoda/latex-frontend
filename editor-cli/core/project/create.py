@@ -38,20 +38,12 @@ def create_project(path: Path, template: str) -> None:
     # click.echo(
     #     f"+ Creating a new LaTeX project using the {template} template...")
 
-    try:
-        template_files = load_template(template)
+    template_files = load_template(template)
 
-        path.mkdir(parents=True, exist_ok=True)
-        for filename, content in template_files.items():
-            target_path = path / filename
-            target_path.write_text(content, encoding='utf-8')
-            # click.echo(f"  + Created {filename}")
+    path.mkdir(parents=True, exist_ok=True)
+    for filename, content in template_files.items():
+        target_path = path / filename
+        target_path.write_text(content, encoding='utf-8')
+        # click.echo(f"  + Created {filename}")
 
-        # click.echo(f"+ Project initialized successfully!")
-
-    except FileNotFoundError as e:
-        # click.echo(f"Error: {e}", err=True)
-        raise click.Abort()
-    except Exception as e:
-        # click.echo(f"Error creating project: {e}", err=True)
-        raise click.Abort()
+    # click.echo(f"+ Project initialized successfully!")

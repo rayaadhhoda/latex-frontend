@@ -9,10 +9,12 @@ export default function Home() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await getConfig(undefined, { signal: controller.signal });
+        const res = await getConfig(null, { signal: controller.signal });
         const fullName = res.data?.config?.full_name;
+        console.log(res);
         setReturningUser(!!fullName);
-      } catch {
+      } catch (err) {
+        console.error(err);
         setReturningUser(false);
       }
     })();

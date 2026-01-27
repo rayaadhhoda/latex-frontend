@@ -121,6 +121,16 @@ async def chat(request: ChatRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/files")
+async def list_files(dir: str = Query(...)):
+    try:
+        dir_path = Path(dir)
+        files = project.read.list_files(dir_path)
+        return {"success": True, "data": {"files": files}}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/config")
 async def get_config(key: str | None = Query(default=None)):
     try:
