@@ -1,13 +1,14 @@
-import "./App.css";
-import Test from "./pages/test";
+import { Routes, Route } from "react-router-dom";
+import Onboarding from "./pages/onboarding";
+import Home from "./pages/home";
 
 function App() {
-
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <Test />
+    <main className="min-h-screen">
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/onboarding" element={<Onboarding />} />
+      </Routes>
     </main>
   );
 }

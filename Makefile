@@ -19,8 +19,8 @@ dev:
 	@echo "Starting Tauri app..."
 	@cd editor-gui && npm run tauri dev
 
-serve:
-	@cd editor-cli && uv run python -m cli.server
+dev-gui:
+	@cd editor-gui && npm run tauri dev
 
 build:
 	@uv run build.py
