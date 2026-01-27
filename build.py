@@ -112,6 +112,9 @@ def build_pyinstaller(target_triple: str) -> Path:
         str(build_dir),
         "--specpath",
         str(build_dir),
+        # Include template files for project creation
+        "--add-data",
+        f"{CLI_DIR / 'core' / 'project' / 'templates'}:core/project/templates",
     ]
     for module in copy_metadata:
         cmd.extend(["--copy-metadata", module])

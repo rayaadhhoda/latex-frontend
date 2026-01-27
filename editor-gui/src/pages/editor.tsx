@@ -1,10 +1,9 @@
 import { useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CodeEditor from "@/components/code-editor";
 import AIChat from "@/components/ai-chat";
-import { EditorProvider, useEditor } from "@/contexts/editor-context";
-import { useEffect } from "react";
+import { EditorProvider } from "@/contexts/editor-context";
+
 
 export default function Editor() {
   const [searchParams] = useSearchParams();
