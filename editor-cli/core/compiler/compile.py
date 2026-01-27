@@ -1,15 +1,16 @@
 from pathlib import Path
-import json
-import urllib.request
-import urllib.error
-import hashlib
-
-IGNORED_PATHS = ['.gitignore', '.git', '.env', '.DS_Store']
+from dataclasses import dataclass
+import subprocess
+import platform
 
 
-def _generate_project_id(dir: Path) -> str:
-    """Generate a project ID based on directory path hash."""
-    return hashlib.md5(str(dir.absolute()).encode()).hexdigest()
+@dataclass
+class CompileResult:
+    """Result of a LaTeX compilation."""
+    success: bool
+    pdf_path: Path | None
+    stdout: str
+    stderr: str
 
 
 def _validate_main_tex(dir: Path) -> None:
@@ -19,160 +20,132 @@ def _validate_main_tex(dir: Path) -> None:
         raise FileNotFoundError(f"main.tex not found in {dir}")
 
 
-def _collect_resources(dir: Path) -> list:
-    """Collect all files in the directory as resources for compilation."""
-    resources = []
-    for file_path in sorted(dir.iterdir()):
-        if file_path.name in IGNORED_PATHS:
-            continue
-        if file_path.is_file():
-            try:
-                content = file_path.read_text(encoding='utf-8')
-                relative_path = file_path.name
-                resources.append({"path": relative_path, "content": content})
-            except UnicodeDecodeError:
-                # click.echo(f"+ Skipping binary file: {file_path.name}",
-                #            err=True)
-                continue
-    return resources
+def _get_target_triple() -> str:
+    """Return the target triple for the current platform."""
+    system = platform.system().lower()
+    machine = platform.machine().lower()
 
-
-def _build_compile_payload(resources: list, compiler: str,
-                           timeout: int) -> dict:
-    """Build the compile request payload."""
-    return {
-        "compile": {
-            "options": {
-                "compiler": compiler,
-                "timeout": timeout,
-                "draft": False,
-                "compileGroup": "standard",
-                # "compileBackendClass": "e2",
-                "enablePdfCaching": False
-            },
-            "rootResourcePath": "main.tex",
-            "resources": resources
-        }
-    }
-
-
-def _make_compile_request(url: str, payload: dict, timeout: int) -> dict:
-    """Make the compile API request and return the response data."""
-    json_data = json.dumps(payload).encode('utf-8')
-    request = urllib.request.Request(
-        url,
-        data=json_data,
-        headers={'Content-Type': 'application/json'},
-        method='POST')
-
-    print(json_data)
-    with urllib.request.urlopen(request, timeout=timeout + 10) as response:
-        return json.loads(response.read().decode('utf-8'))
-
-
-def _fetch_output_content(output_files: list, output_type: str) -> str:
-    """Fetch content from output files URL by type (stdout, stderr, etc.)."""
-    output_file = next(
-        (f for f in output_files if f.get("type") == output_type), None)
-
-    if not output_file:
-        return ""
-
-    output_url = output_file.get("url")
-    if not output_url:
-        return ""
-
-    try:
-        with urllib.request.urlopen(output_url, timeout=10) as response:
-            return response.read().decode('utf-8')
-    except Exception as e:
-        return f"Failed to fetch {output_type}: {str(e)}"
-
-
-def _fetch_stderr_content(output_files: list) -> str:
-    """Fetch stderr content from the output files URL."""
-    return _fetch_output_content(output_files, "stderr")
-
-
-def _fetch_stdout_content(output_files: list) -> str:
-    """Fetch stdout content from the output files URL."""
-    return _fetch_output_content(output_files, "stdout")
-
-
-def _handle_success(compile_result: dict, response_data: dict) -> str:
-    """Handle successful compilation and return PDF URL."""
-    output_files = compile_result.get("outputFiles", [])
-    pdf_file = next((f for f in output_files if f.get("type") == "pdf"), None)
-
-    if pdf_file:
-        pdf_url = pdf_file.get("url")
-        # click.echo(f"+ Compilation successful!")
-        # click.echo(f"+ PDF available at: {pdf_url}")
-        return pdf_url
+    if system == "darwin":
+        if machine == "arm64":
+            return "aarch64-apple-darwin"
+        return "x86_64-apple-darwin"
+    elif system == "windows":
+        if machine == "amd64" or machine == "x86_64":
+            return "x86_64-pc-windows-msvc"
+        return "i686-pc-windows-msvc"
+    elif system == "linux":
+        if machine == "aarch64":
+            return "aarch64-unknown-linux-gnu"
+        return "x86_64-unknown-linux-gnu"
     else:
-        # click.echo("+ Compilation successful but no PDF found in output files",
-        #            err=True)
-        return json.dumps(response_data, indent=2)
+        raise RuntimeError(f"Unsupported platform: {system}/{machine}")
 
 
-def _handle_failure(compile_result: dict, response_data: dict) -> str:
-    """Handle failed compilation and return error details."""
-    error_message = compile_result.get("error", "Unknown error")
-    output_files = compile_result.get("outputFiles", [])
-    stdout_contents = _fetch_stdout_content(output_files)
-    stderr_contents = _fetch_stderr_content(output_files)
+def _run_tectonic(
+    tectonic_path: Path,
+    input_file: Path,
+    output_dir: Path,
+    timeout: int,
+    keep_logs: bool = False,
+    synctex: bool = False,
+    print_output: bool = False,
+) -> subprocess.CompletedProcess:
+    """Run the Tectonic compiler on the input file.
 
-    print(compile_result)
-    # click.echo(f"+ Compilation failed: {error_message}", err=True)
-    if stdout_contents:
-        pass
-        # click.echo(f"+ Output: {stdout_contents}", err=True)
-    if stderr_contents:
-        pass
-        # click.echo(f"+ Error: {stderr_contents}", err=True)
-    return json.dumps(response_data, indent=2)
+    Args:
+        tectonic_path: Path to the Tectonic binary
+        input_file: Path to the main .tex file
+        output_dir: Directory for output files
+        timeout: Compilation timeout in seconds
+        keep_logs: Whether to keep log files
+        synctex: Whether to generate SyncTeX data
+        print_output: Whether to print engine output during processing
+
+    Returns:
+        CompletedProcess with stdout and stderr captured
+    """
+    cmd = [
+        str(tectonic_path.absolute()),
+        "-X",
+        "compile",
+        str(input_file),
+        "--outdir",
+        str(output_dir),
+    ]
+
+    if keep_logs:
+        cmd.append("--keep-logs")
+
+    if synctex:
+        cmd.append("--synctex")
+
+    if print_output:
+        cmd.append("--print")
+
+    print(' '.join(cmd))
+
+    return subprocess.run(
+        cmd,
+        cwd=output_dir,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
 
 
-def compile_project(dir: Path,
-                    clsi_url: str = "http://localhost:3013",
-                    compiler: str = "pdflatex",
-                    timeout: int = 60) -> str:
-    """Compile a LaTeX project using CLSI API and return the output.
+def compile_project(
+    dir: Path,
+    timeout: int = 60,
+    keep_logs: bool = False,
+    synctex: bool = False,
+) -> CompileResult:
+    """Compile a LaTeX project using Tectonic and return the result.
 
     Args:
         dir: Directory containing LaTeX project files
-        clsi_url: Base URL for CLSI service (default: http://localhost:3013)
-        compiler: LaTeX compiler to use (latex, pdflatex, xelatex, lualatex)
         timeout: Compilation timeout in seconds (default: 60)
+        keep_logs: Whether to keep log files (default: False)
+        synctex: Whether to generate SyncTeX data (default: False)
 
     Returns:
-        String containing compilation result (PDF URL on success, error message on failure)
+        CompileResult with success status, PDF path, and output streams
     """
     _validate_main_tex(dir)
-    project_id = _generate_project_id(dir)
-    resources = _collect_resources(dir)
-    payload = _build_compile_payload(resources, compiler, timeout)
+    target_triple = _get_target_triple()
+    tectonic_bin = Path(f"./bin/tectonic-{target_triple}")
 
-    url = f"{clsi_url}/project/{project_id}/compile"
+    main_tex = dir / "main.tex"
+    pdf_path = dir / "main.pdf"
 
     try:
-        response_data = _make_compile_request(url, payload, timeout)
-        compile_result = response_data.get("compile", {})
-        status = compile_result.get("status")
+        result = _run_tectonic(
+            tectonic_path=tectonic_bin,
+            input_file=main_tex,
+            output_dir=dir,
+            timeout=timeout,
+            keep_logs=keep_logs,
+            synctex=synctex,
+        )
 
-        if status == "success":
-            return _handle_success(compile_result, response_data)
-        else:
-            return _handle_failure(compile_result, response_data)
+        success = result.returncode == 0
+        return CompileResult(
+            success=success,
+            pdf_path=pdf_path if success and pdf_path.exists() else None,
+            stdout=result.stdout,
+            stderr=result.stderr,
+        )
 
-    except urllib.error.HTTPError as e:
-        error_body = e.read().decode('utf-8') if e.fp else "No error details"
-        # click.echo(f"+ HTTP Error {e.code}: {error_body}", err=True)
-        raise
-    except urllib.error.URLError as e:
-        # click.echo(f"+ Connection error: {e.reason}", err=True)
-        # click.echo(f"+ Make sure CLSI is running at {clsi_url}", err=True)
-        raise
+    except subprocess.TimeoutExpired as e:
+        return CompileResult(
+            success=False,
+            pdf_path=None,
+            stdout=e.stdout if e.stdout else "",
+            stderr=f"Compilation timed out after {timeout} seconds",
+        )
     except Exception as e:
-        # click.echo(f"+ Error: {str(e)}", err=True)
-        raise
+        return CompileResult(
+            success=False,
+            pdf_path=None,
+            stdout="",
+            stderr=str(e),
+        )

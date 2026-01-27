@@ -1,3 +1,3 @@
-from .compile import compile_project
+from .compile import compile_project, CompileResult
 
-__all__ = ["compile_project"]
+__all__ = ["compile_project", "CompileResult"]

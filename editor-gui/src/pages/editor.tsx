@@ -3,25 +3,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CodeEditor from "@/components/code-editor";
 import AIChat from "@/components/ai-chat";
 import { EditorProvider } from "@/contexts/editor-context";
+import PDFView from "@/components/pdf-view";
 
 
 export default function Editor() {
   const [searchParams] = useSearchParams();
   const dir = searchParams.get("dir");
-
-
-
-  // useEffect(() => {
-  //   const controller = new AbortController();
-
-  //   if (files.includes("out.pdf")) {
-  //     toast.success("PDF generated successfully");
-  //   } else {
-  //     toast.error("Failed to generate PDF");
-  //   }
-
-  //   return () => controller.abort();
-  // }, []);
 
   return (
     <EditorProvider dir={dir}>
@@ -46,7 +33,7 @@ export default function Editor() {
 
         {/* Right Panel - PDF Viewer */}
         <div className="w-2/3 flex items-center justify-center bg-muted/30">
-          <p className="text-muted-foreground">PDF goes here</p>
+          <PDFView />
         </div>
       </div>
     </EditorProvider>

@@ -6,14 +6,15 @@ import {
   type ReactNode,
   useEffect,
 } from "react";
-import { compileProject, initProject, listFiles } from "@/api/client";
+import { compileProject, getPDF, initProject, listFiles } from "@/api/client";
 
 interface EditorContextValue {
   dir: string | null;
   files: string[];
+  pdf: Uint8Array | null;
   loading: boolean;
   error: string | null;
-  refreshFiles: (controller: AbortController) => Promise<void>;
+  refreshFiles: () => Promise<void>;
 }
 
 const EditorContext = createContext<EditorContextValue | null>(null);
@@ -25,14 +26,15 @@ interface EditorProviderProps {
 
 export function EditorProvider({ dir, children }: EditorProviderProps) {
   const [files, setFiles] = useState<string[]>([]);
+  const [pdf, setPdf] = useState<Uint8Array | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const refreshFiles = useCallback(async (controller: AbortController) => {
+  const refreshFiles = useCallback(async () => {
     if (!dir) return;
 
     try {
-      const response = await listFiles(dir, { signal: controller.signal });
+      const response = await listFiles(dir);
       if (response.success && response.data) {
         setFiles(response.data.files);
       } else {
@@ -43,10 +45,10 @@ export function EditorProvider({ dir, children }: EditorProviderProps) {
     }
 
     if (!files.includes("main.tex")) {
-      await initProject(dir, "default", { signal: controller.signal });
+      await initProject(dir, "default");
 
       // re-list files after init
-      const response = await listFiles(dir, { signal: controller.signal });
+      const response = await listFiles(dir);
       if (response.success && response.data) {
         setFiles(response.data.files);
       } else {
@@ -55,30 +57,30 @@ export function EditorProvider({ dir, children }: EditorProviderProps) {
     }
 
     try {
-      await compilePDF(controller);
+      await compilePDF();
+      const bytes = await getPDF(dir);
+      setPdf(bytes);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to compile PDF");
     }
   }, [dir]);
 
-  const compilePDF = useCallback(async (controller: AbortController) => {
+  const compilePDF = useCallback(async () => {
     if (!dir) return;
 
     try {
-      await compileProject(dir, { signal: controller.signal });
+      await compileProject(dir);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to compile PDF");
     }
   }, [dir]);
 
   useEffect(() => {
-    const controller = new AbortController();
-
     setLoading(true);
     setError(null);
     (async () => {
       try {
-        await refreshFiles(controller);
+        await refreshFiles();
       } catch (err) {
         console.error(err);
         setError(err instanceof Error ? err.message : "Failed to refresh files");
@@ -86,12 +88,12 @@ export function EditorProvider({ dir, children }: EditorProviderProps) {
         setLoading(false);
       }
     })();
-    return () => controller.abort();
   }, [dir, refreshFiles]);
 
   const value: EditorContextValue = {
     dir,
     files,
+    pdf,
     loading,
     error,
     refreshFiles,

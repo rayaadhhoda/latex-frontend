@@ -14,6 +14,10 @@ import platform
 import shutil
 import subprocess
 import sys
+import tarfile
+import tempfile
+import urllib.request
+import zipfile
 from pathlib import Path
 
 # Paths
@@ -21,6 +25,10 @@ ROOT = Path(__file__).parent
 CLI_DIR = ROOT / "editor-cli"
 GUI_DIR = ROOT / "editor-gui"
 SIDECAR_DIR = GUI_DIR / "src-tauri" / "bin"
+
+# Tectonic binary download
+TECTONIC_VERSION = "0.15.0"
+TECTONIC_RELEASE_URL = "https://github.com/tectonic-typesetting/tectonic/releases/download/tectonic%400.15.0"
 
 
 def get_target_triple() -> str:
@@ -50,6 +58,80 @@ def get_sidecar_name(target_triple: str) -> str:
     if "windows" in target_triple:
         return f"{base}.exe"
     return base
+
+
+def get_tectonic_asset_name(target_triple: str) -> str:
+    """Return the tectonic release asset filename for the given target triple."""
+    # Map Tauri target triples to tectonic asset names
+    # Note: ARM64 Linux uses musl variant in tectonic releases
+    asset_map = {
+        "aarch64-apple-darwin":
+        f"tectonic-{TECTONIC_VERSION}-aarch64-apple-darwin.tar.gz",
+        "x86_64-apple-darwin":
+        f"tectonic-{TECTONIC_VERSION}-x86_64-apple-darwin.tar.gz",
+        "x86_64-unknown-linux-gnu":
+        f"tectonic-{TECTONIC_VERSION}-x86_64-unknown-linux-gnu.tar.gz",
+        "aarch64-unknown-linux-gnu":
+        f"tectonic-{TECTONIC_VERSION}-aarch64-unknown-linux-musl.tar.gz",
+        "x86_64-pc-windows-msvc":
+        f"tectonic-{TECTONIC_VERSION}-x86_64-pc-windows-msvc.zip",
+    }
+    if target_triple not in asset_map:
+        raise RuntimeError(
+            f"No tectonic binary available for: {target_triple}")
+    return asset_map[target_triple]
+
+
+def get_tectonic_sidecar_name(target_triple: str) -> str:
+    """Return the tectonic sidecar filename with target triple."""
+    base = f"tectonic-{target_triple}"
+    if "windows" in target_triple:
+        return f"{base}.exe"
+    return base
+
+
+def download_tectonic(target_triple: str) -> Path:
+    """Download tectonic binary and copy to sidecar directory."""
+    print("\n=== Downloading tectonic binary ===")
+
+    asset_name = get_tectonic_asset_name(target_triple)
+    url = f"{TECTONIC_RELEASE_URL}/{asset_name}"
+    sidecar_name = get_tectonic_sidecar_name(target_triple)
+    dest = SIDECAR_DIR / sidecar_name
+
+    print(f"+ Downloading: {url}")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmppath = Path(tmpdir)
+        archive_path = tmppath / asset_name
+
+        # Download the archive
+        urllib.request.urlretrieve(url, archive_path)
+        print(f"+ Downloaded to: {archive_path}")
+
+        # Extract the archive
+        if asset_name.endswith(".tar.gz"):
+            with tarfile.open(archive_path, "r:gz") as tar:
+                tar.extractall(tmppath)
+            binary_name = "tectonic"
+        elif asset_name.endswith(".zip"):
+            with zipfile.ZipFile(archive_path, "r") as zf:
+                zf.extractall(tmppath)
+            binary_name = "tectonic.exe"
+        else:
+            raise RuntimeError(f"Unknown archive format: {asset_name}")
+
+        # Find and copy the binary
+        binary_path = tmppath / binary_name
+        if not binary_path.exists():
+            raise FileNotFoundError(
+                f"Binary not found in archive: {binary_path}")
+
+        SIDECAR_DIR.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(binary_path, dest)
+        print(f"+ Copied to: {dest}")
+
+    return dest
 
 
 def run(cmd: list[str],
@@ -157,6 +239,11 @@ def main():
 
     target_triple = get_target_triple()
     print(f"+ Target triple: {target_triple}")
+
+    # Download tectonic if --link-only is absent OR binary is missing
+    tectonic_sidecar = SIDECAR_DIR / get_tectonic_sidecar_name(target_triple)
+    if "--link-only" not in sys.argv or not tectonic_sidecar.exists():
+        download_tectonic(target_triple)
 
     # Step 1: Build wheel
     build_wheel()

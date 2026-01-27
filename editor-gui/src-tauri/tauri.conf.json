@@ -32,6 +32,9 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "externalBin": ["bin/latex-chatbot-cli"]
+    "externalBin": [
+      "bin/latex-chatbot-cli",
+      "bin/tectonic"
+    ]
   }
 }

@@ -84,11 +84,9 @@ export default function Onboarding() {
 
   // Fetch existing config on mount
   useEffect(() => {
-    const controller = new AbortController();
-
     async function fetchConfig() {
       try {
-        const response = await getConfig(undefined, { signal: controller.signal });
+        const response = await getConfig();
         if (response.success && response.data?.config) {
           const config = response.data.config;
 
@@ -112,8 +110,6 @@ export default function Onboarding() {
       }
     }
     fetchConfig();
-
-    return () => controller.abort();
   }, [form]);
 
   async function onSubmit(data: FormData) {

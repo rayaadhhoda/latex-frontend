@@ -8,7 +8,7 @@ interface ApiResponse<T = unknown> {
 
 async function request<T>(
   endpoint: string,
-  options: RequestInit
+  options?: RequestInit
 ): Promise<ApiResponse<T>> {
   const res = await fetch(`${API_BASE}${endpoint}`, {
     headers: {
@@ -26,7 +26,7 @@ async function request<T>(
 }
 
 export async function health(
-  options: RequestInit,
+  options?: RequestInit,
 ): Promise<ApiResponse<{ status: string; version: string }>> {
   return request("/health", options);
 }
@@ -66,9 +66,30 @@ export async function chat(
 
 export async function listFiles(
   dir: string,
-  options: RequestInit,
+  options?: RequestInit,
 ): Promise<ApiResponse<{ files: string[] }>> {
   return request(`/files?dir=${encodeURIComponent(dir)}`, options);
+}
+
+export async function getPDF(
+  dir: string,
+  options?: RequestInit,
+): Promise<Uint8Array> {
+  const res = await fetch(
+    `${API_BASE}/pdf?dir=${encodeURIComponent(dir)}`,
+    options,
+  );
+
+  if (!res.ok) {
+    if (res.status === 404) {
+      throw new Error("PDF not found");
+    }
+    const error = await res.json();
+    throw new Error(error.detail || `HTTP error ${res.status}`);
+  }
+
+  const buffer = await res.arrayBuffer();
+  return new Uint8Array(buffer);
 }
 
 export interface ConfigData {
@@ -79,8 +100,8 @@ export interface ConfigData {
 }
 
 export async function getConfig(
-  key: string | null,
-  options: RequestInit,
+  key?: string,
+  options?: RequestInit,
 ): Promise<ApiResponse<{ config: ConfigData }>> {
   const endpoint = key ? `/config?key=${encodeURIComponent(key)}` : "/config";
   return request(endpoint, options);

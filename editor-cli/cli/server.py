@@ -9,6 +9,7 @@ if getattr(sys, "frozen", False):
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from core import __version__, compiler
@@ -101,12 +102,24 @@ async def compile_project(request: CompileRequest):
     try:
         dir_path = Path(request.dir)
         result = compiler.compile_project(dir_path)
-        return {
-            "success": True,
-            "data": {
-                "result": str(result) if result else "Compilation complete"
+        if result.success:
+            return {
+                "success": True,
+                "data": {
+                    "pdf_path":
+                    str(result.pdf_path) if result.pdf_path else None,
+                    "stdout": result.stdout,
+                    "stderr": result.stderr,
+                }
             }
-        }
+        else:
+            return {
+                "success": False,
+                "data": {
+                    "stdout": result.stdout,
+                    "stderr": result.stderr,
+                }
+            }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -127,6 +140,20 @@ async def list_files(dir: str = Query(...)):
         dir_path = Path(dir)
         files = project.read.list_files(dir_path)
         return {"success": True, "data": {"files": files}}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/pdf")
+async def get_pdf(dir: str = Query(...)):
+    try:
+        pdf_path = Path(dir) / "main.pdf"
+        if not pdf_path.exists():
+            raise HTTPException(status_code=404, detail="main.pdf not found")
+        pdf_bytes = pdf_path.read_bytes()
+        return Response(content=pdf_bytes, media_type="application/pdf")
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
