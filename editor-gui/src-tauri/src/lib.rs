@@ -46,7 +46,6 @@ pub fn run() {
             println!("Server started on http://127.0.0.1:8765");
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app_handle, event| {

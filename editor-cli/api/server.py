@@ -4,18 +4,26 @@ import sys
 import threading
 import time
 
+import copilotkit
+from fastapi.routing import Mount
+from pydantic_ai.ui.ag_ui.app import AGUIApp
+
 if getattr(sys, "frozen", False):
     os.environ.setdefault("PYDANTIC_DISABLE_PLUGINS", "1")
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
+from pydantic_ai.ui.ag_ui import AGUIAdapter
+import json
 
 from core import __version__, compiler
 from core import project
 from core import settings
-from core.chat import chatbot
+from core.chat.chatbot import create_agent, ProjectContext
+from copilotkit.integrations.fastapi import add_fastapi_endpoint
+from copilotkit import CopilotKitRemoteEndpoint
 
 
 def _start_parent_watcher():
@@ -36,16 +44,6 @@ def _start_parent_watcher():
 
 _start_parent_watcher()
 
-app = FastAPI(title="LaTeX Chatbot API", version=__version__)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 
 # Request/Response models
 class InitRequest(BaseModel):
@@ -57,11 +55,6 @@ class CompileRequest(BaseModel):
     dir: str
 
 
-class ChatRequest(BaseModel):
-    dir: str
-    query: str
-
-
 class UpdateConfigRequest(BaseModel):
     openai_api_base: str | None = None
     openai_api_key: str | None = None
@@ -69,14 +62,16 @@ class UpdateConfigRequest(BaseModel):
     full_name: str | None = None
 
 
-# Startup event
-@app.on_event("startup")
-async def startup():
-    if settings.first_run.is_first_run():
-        settings.first_run.setup_first_run()
+app = FastAPI(title="LaTeX Chatbot API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
-# Endpoints
 @app.get("/health")
 async def health():
     return {"status": "ok", "version": __version__}
@@ -120,16 +115,6 @@ async def compile_project(request: CompileRequest):
                     "stderr": result.stderr,
                 }
             }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/chat")
-async def chat(request: ChatRequest):
-    try:
-        dir_path = Path(request.dir)
-        response = chatbot.chat_with_project(dir_path, request.query)
-        return {"success": True, "data": {"response": response}}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -198,6 +183,23 @@ async def nuke_config():
         return {"success": True, "data": {"message": "Config nuked"}}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/chatbot")
+async def get_chatbot(request: Request):
+    agent = create_agent()
+    return await AGUIAdapter.dispatch_request(request, agent=agent)
+
+
+# CopilotKit runtime endpoint
+runtime = CopilotKitRemoteEndpoint(agents=[create_agent()])
+
+add_fastapi_endpoint(fastapi_app=app, sdk=runtime, prefix="/chatbot")
+
+# ai_app.mount("/content", content_app)
+# Mount apps
+# app.mount("/", ai_app)
+# app.mount("/content", content_app)
 
 
 def main():

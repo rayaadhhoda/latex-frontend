@@ -1,4 +1,4 @@
-const API_BASE = "http://127.0.0.1:8765";
+import { API_BASE_URL, API_ENDPOINTS } from "./constants";
 
 interface ApiResponse<T = unknown> {
   success: boolean;
@@ -10,7 +10,7 @@ async function request<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<ApiResponse<T>> {
-  const res = await fetch(`${API_BASE}${endpoint}`, {
+  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
     headers: {
       "Content-Type": "application/json",
     },
@@ -28,7 +28,7 @@ async function request<T>(
 export async function health(
   options?: RequestInit,
 ): Promise<ApiResponse<{ status: string; version: string }>> {
-  return request("/health", options);
+  return request(API_ENDPOINTS.HEALTH, options);
 }
 
 export async function initProject(
@@ -36,7 +36,7 @@ export async function initProject(
   template: string = "default",
   options?: RequestInit,
 ): Promise<ApiResponse<{ message: string }>> {
-  return request("/init", {
+  return request(API_ENDPOINTS.INIT, {
     method: "POST",
     body: JSON.stringify({ dir, template }),
     ...options,
@@ -47,7 +47,7 @@ export async function compileProject(
   dir: string,
   options?: RequestInit,
 ): Promise<ApiResponse<{ result: string }>> {
-  return request("/compile", {
+  return request(API_ENDPOINTS.COMPILE, {
     method: "POST",
     body: JSON.stringify({ dir }),
     ...options,
@@ -58,7 +58,7 @@ export async function chat(
   dir: string,
   query: string
 ): Promise<ApiResponse<{ response: string }>> {
-  return request("/chat", {
+  return request(API_ENDPOINTS.CHAT, {
     method: "POST",
     body: JSON.stringify({ dir, query }),
   });
@@ -68,7 +68,7 @@ export async function listFiles(
   dir: string,
   options?: RequestInit,
 ): Promise<ApiResponse<{ files: string[] }>> {
-  return request(`/files?dir=${encodeURIComponent(dir)}`, options);
+  return request(`${API_ENDPOINTS.FILES}?dir=${encodeURIComponent(dir)}`, options);
 }
 
 export async function getPDF(
@@ -76,7 +76,7 @@ export async function getPDF(
   options?: RequestInit,
 ): Promise<Uint8Array> {
   const res = await fetch(
-    `${API_BASE}/pdf?dir=${encodeURIComponent(dir)}`,
+    `${API_BASE_URL}${API_ENDPOINTS.PDF}?dir=${encodeURIComponent(dir)}`,
     options,
   );
 
@@ -103,21 +103,21 @@ export async function getConfig(
   key?: string,
   options?: RequestInit,
 ): Promise<ApiResponse<{ config: ConfigData }>> {
-  const endpoint = key ? `/config?key=${encodeURIComponent(key)}` : "/config";
+  const endpoint = key ? `${API_ENDPOINTS.CONFIG}?key=${encodeURIComponent(key)}` : API_ENDPOINTS.CONFIG;
   return request(endpoint, options);
 }
 
 export async function updateConfig(
   config: Partial<ConfigData>
 ): Promise<ApiResponse<{ config: ConfigData }>> {
-  return request("/config", {
+  return request(API_ENDPOINTS.CONFIG, {
     method: "POST",
     body: JSON.stringify(config),
   });
 }
 
 export async function nukeConfig(): Promise<ApiResponse<{ message: string }>> {
-  return request("/nuke", {
+  return request(API_ENDPOINTS.NUKE, {
     method: "POST",
   });
 }

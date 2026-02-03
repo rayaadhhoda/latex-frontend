@@ -1,4 +1,5 @@
 from pathlib import Path
+from textwrap import dedent
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openrouter import OpenRouterModel
 from pydantic_ai.providers.openrouter import OpenRouterProvider
@@ -12,11 +13,27 @@ class ProjectContext(TypedDict):
     folder_path: Path
 
 
-def chat_with_project(folder_path: Path, message: str) -> str:
-    """Chat with the LaTeX chatbot to perform file operations."""
+SYSTEM_PROMPT = dedent(
+    """You are a helpful LaTeX assistant that can read, write, and modify LaTeX files 
+        based on user requests. You have access to tools that allow you to:
+        1. List files in the project directory
+        2. Read the contents of any file
+        3. Edit/write the contents of any file
+
+        When a user asks you to modify LaTeX files, you should:
+        - First, list files to understand the project structure if needed
+        - Read relevant files to understand the current content
+        - Make the requested changes
+        - Write the updated content back to the file
+
+        Always be careful to preserve LaTeX syntax and formatting. When editing files, provide the complete 
+        file content, not just the changed sections.""")
+
+
+def create_agent() -> Agent[ProjectContext, str]:
+    """Create and return a configured agent instance."""
     # Load API configuration
     config = settings.fetch_all()
-    api_base = config.get('openai_api_base', 'https://api.openai.com/v1')
     api_key = config.get('openai_api_key', '')
     api_model = config.get('openai_api_model', 'gpt-4o-mini')
 
@@ -32,23 +49,11 @@ def chat_with_project(folder_path: Path, message: str) -> str:
 
     # Create agent with system prompt
     agent = Agent(
+        name="latex-chatbot",
         model=model,
         deps_type=ProjectContext,
-        system_prompt=
-        """You are a helpful LaTeX assistant that can read, write, and modify LaTeX files 
-based on user requests. You have access to tools that allow you to:
-1. List files in the project directory
-2. Read the contents of any file
-3. Edit/write the contents of any file
-
-When a user asks you to modify LaTeX files, you should:
-- First, list files to understand the project structure if needed
-- Read relevant files to understand the current content
-- Make the requested changes
-- Write the updated content back to the file
-
-Always be careful to preserve LaTeX syntax and formatting. When editing files, provide the complete 
-file content, not just the changed sections.""")
+        system_prompt=SYSTEM_PROMPT,
+    )
 
     # Define tools
     @agent.tool(
@@ -63,7 +68,6 @@ file content, not just the changed sections.""")
         Returns:
             The contents of the file as a string.
         """
-        # click.echo(f"+ Reading file {file_path}...")
         full_path = ctx.deps['folder_path'] / file_path
         if not full_path.exists():
             return f"Error: File '{file_path}' does not exist in the project directory."
@@ -87,7 +91,6 @@ file content, not just the changed sections.""")
         Returns:
             A success message or error description.
         """
-        # click.echo(f"+ Editing file {file_path}...")
         full_path = ctx.deps['folder_path'] / file_path
         try:
             # Ensure parent directory exists
@@ -109,14 +112,18 @@ file content, not just the changed sections.""")
         Returns:
             A formatted string listing all files in the directory.
         """
-        # click.echo(f"+ Listing files...")
         files = list_files(ctx.deps['folder_path'], recursive=recursive)
         if not files:
             return "No files found in the project directory."
         file_list = "\n".join(f"  - {f}" for f in files)
         return f"Files in project directory:\n{file_list}"
 
-    # Run the agent with context
+    return agent
+
+
+def chat_with_project(folder_path: Path, message: str) -> str:
+    """Chat with the LaTeX chatbot to perform file operations."""
+    agent = create_agent()
     context: ProjectContext = {'folder_path': folder_path}
     result = agent.run_sync(message, deps=context)
     return result.output

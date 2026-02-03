@@ -6,9 +6,7 @@ init:
 	@cd editor-cli && uv sync
 	@cd editor-gui && npm install
 	@uv run build.py --link-only
-
-cli:
-	@cd editor-cli && uv run latex-chatbot --dir=temp $(filter-out $@,$(MAKECMDGOALS))
+	@echo "Initialized project! Run 'make dev' to start the development server."
 
 gui:
 	@cd editor-gui && npm run dev

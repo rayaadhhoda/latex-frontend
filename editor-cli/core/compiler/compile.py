@@ -82,8 +82,6 @@ def _run_tectonic(
     if print_output:
         cmd.append("--print")
 
-    print(' '.join(cmd))
-
     return subprocess.run(
         cmd,
         cwd=output_dir,
