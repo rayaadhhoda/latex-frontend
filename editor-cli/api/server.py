@@ -1,12 +1,11 @@
-from pathlib import Path
 import os
+from pathlib import Path
 import sys
 import threading
 import time
 
-if getattr(sys, "frozen", False):
-    os.environ.setdefault("PYDANTIC_DISABLE_PLUGINS", "1")
-
+from copilotkit import CopilotKitRemoteEndpoint, LangGraphAgent
+from copilotkit.integrations.fastapi import add_fastapi_endpoint as add_copilotkit_fastapi_endpoint
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
@@ -16,8 +15,9 @@ from core import __version__, compiler
 from core import project
 from core import settings
 from core.chat.chatbot import create_graph
-from copilotkit.integrations.fastapi import add_fastapi_endpoint
-from copilotkit import CopilotKitRemoteEndpoint, LangGraphAgent
+
+if getattr(sys, "frozen", False):
+    os.environ.setdefault("PYDANTIC_DISABLE_PLUGINS", "1")
 
 
 def _start_parent_watcher():
@@ -57,13 +57,6 @@ class UpdateConfigRequest(BaseModel):
 
 
 app = FastAPI(title="LaTeX Chatbot API")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 
 @app.get("/health")
@@ -184,20 +177,28 @@ def get_agents(context):
     # Get folder_path from context properties (sent by frontend)
     properties = context.get("properties", {})
     folder_path = Path(properties.get("folder_path", "."))
-    
+    print(folder_path, 'asdasd')
+
     return [
         LangGraphAgent(
-            name="latex-chatbot",
-            description="LaTeX assistant that can read, write, and modify LaTeX files",
             graph=create_graph(folder_path),
+            name="latex-chatbot",
         )
     ]
 
 
 # CopilotKit runtime endpoint with dynamic agent creation
 runtime = CopilotKitRemoteEndpoint(agents=get_agents)
-add_fastapi_endpoint(fastapi_app=app, sdk=runtime, prefix="/copilotkit")
-
+add_copilotkit_fastapi_endpoint(fastapi_app=app,
+                                sdk=runtime,
+                                prefix="/copilotkit")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def main():
     import uvicorn

@@ -11,12 +11,18 @@ import { API_BASE_URL, API_ENDPOINTS } from "@/api/constants";
 export default function Editor() {
   const [searchParams] = useSearchParams();
   const dir = searchParams.get("dir");
-  // const runtimeUrl = `${API_BASE_URL}${API_ENDPOINTS.CHATBOT}?dir=${encodeURIComponent(dir || "")}`;
+  if (!dir) {
+    throw new Error("Directory not found");
+  }
   const runtimeUrl = `${API_BASE_URL}${API_ENDPOINTS.CHATBOT}`;
 
   return (
     <EditorProvider dir={dir}>
-      <CopilotKit runtimeUrl={runtimeUrl}>
+      <CopilotKit
+        runtimeUrl={runtimeUrl}
+        agent="0"
+        // showDevConsole={true}
+        properties={{ folder_path: dir }}>
       <div className="flex h-screen">
         {/* Left Panel - Chat & Code Tabs */}
         <div className="w-1/3 flex flex-col border-r">

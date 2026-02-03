@@ -10,7 +10,6 @@ from core.project.read import read_file, list_files
 from core.project.edit import edit_file
 from core import settings
 
-
 SYSTEM_PROMPT = dedent(
     """You are a helpful LaTeX assistant that can read, write, and modify LaTeX files 
         based on user requests. You have access to tools that allow you to:
@@ -30,7 +29,7 @@ SYSTEM_PROMPT = dedent(
 
 def create_tools(folder_path: Path):
     """Create tools bound to a specific folder path."""
-    
+
     @tool
     def read_file_tool(file_path: str) -> str:
         """Read the contents of a file in the project directory.
@@ -101,13 +100,13 @@ def create_graph(folder_path: Path) -> CompiledStateGraph:
     """Create and return a configured LangGraph agent."""
     model = create_model()
     tools = create_tools(folder_path)
-    
+
     graph = create_agent(
         model,
         tools=tools,
         system_prompt=SYSTEM_PROMPT,
     )
-    
+
     return graph
 
 
