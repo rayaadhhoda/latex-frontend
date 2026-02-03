@@ -1,16 +1,14 @@
 from pathlib import Path
 from textwrap import dedent
-from pydantic_ai import Agent, RunContext
-from pydantic_ai.models.openrouter import OpenRouterModel
-from pydantic_ai.providers.openrouter import OpenRouterProvider
+
+from langchain_openai import ChatOpenAI
+from langchain_core.tools import tool
+from langchain.agents import create_agent
+from langgraph.graph.state import CompiledStateGraph
+
 from core.project.read import read_file, list_files
 from core.project.edit import edit_file
 from core import settings
-from typing import TypedDict
-
-
-class ProjectContext(TypedDict):
-    folder_path: Path
 
 
 SYSTEM_PROMPT = dedent(
@@ -30,45 +28,17 @@ SYSTEM_PROMPT = dedent(
         file content, not just the changed sections.""")
 
 
-def create_agent() -> Agent[ProjectContext, str]:
-    """Create and return a configured agent instance."""
-    # Load API configuration
-    config = settings.fetch_all()
-    api_key = config.get('openai_api_key', '')
-    api_model = config.get('openai_api_model', 'gpt-4o-mini')
-
-    if not api_key:
-        raise ValueError(
-            "OpenAI API key not configured. Please run 'init' to setup.")
-
-    # Create custom OpenAI model with custom base URL
-    model = OpenRouterModel(
-        provider=OpenRouterProvider(api_key=api_key),
-        model_name=api_model,
-    )
-
-    # Create agent with system prompt
-    agent = Agent(
-        name="latex-chatbot",
-        model=model,
-        deps_type=ProjectContext,
-        system_prompt=SYSTEM_PROMPT,
-    )
-
-    # Define tools
-    @agent.tool(
-        name="read_file_tool",
-        description="Read the contents of a file in the project directory.")
-    def read_file_tool(ctx: RunContext[ProjectContext], file_path: str) -> str:
+def create_tools(folder_path: Path):
+    """Create tools bound to a specific folder path."""
+    
+    @tool
+    def read_file_tool(file_path: str) -> str:
         """Read the contents of a file in the project directory.
         
         Args:
             file_path: Relative path to the file from the project root (e.g., 'main.tex' or 'refs.bib')
-        
-        Returns:
-            The contents of the file as a string.
         """
-        full_path = ctx.deps['folder_path'] / file_path
+        full_path = folder_path / file_path
         if not full_path.exists():
             return f"Error: File '{file_path}' does not exist in the project directory."
         if not full_path.is_file():
@@ -78,52 +48,75 @@ def create_agent() -> Agent[ProjectContext, str]:
         except Exception as e:
             return f"Error reading file '{file_path}': {str(e)}"
 
-    @agent.tool(name="edit_file_tool",
-                description="Edit or create a file in the project directory.")
-    def edit_file_tool(ctx: RunContext[ProjectContext], file_path: str,
-                       content: str) -> str:
+    @tool
+    def edit_file_tool(file_path: str, content: str) -> str:
         """Edit or create a file in the project directory.
         
         Args:
             file_path: Relative path to the file from the project root (e.g., 'main.tex' or 'refs.bib')
             content: The complete content to write to the file
-        
-        Returns:
-            A success message or error description.
         """
-        full_path = ctx.deps['folder_path'] / file_path
+        full_path = folder_path / file_path
         try:
-            # Ensure parent directory exists
             full_path.parent.mkdir(parents=True, exist_ok=True)
             edit_file(full_path, content)
             return f"Successfully updated '{file_path}'."
         except Exception as e:
             return f"Error writing to file '{file_path}': {str(e)}"
 
-    @agent.tool(name="list_files_tool",
-                description="List all files in the project directory.")
-    def list_files_tool(ctx: RunContext[ProjectContext],
-                        recursive: bool = True) -> str:
+    @tool
+    def list_files_tool(recursive: bool = True) -> str:
         """List all files in the project directory.
         
         Args:
             recursive: If True, list files recursively in subdirectories. If False, only list files in the root directory.
-        
-        Returns:
-            A formatted string listing all files in the directory.
         """
-        files = list_files(ctx.deps['folder_path'], recursive=recursive)
+        files = list_files(folder_path, recursive=recursive)
         if not files:
             return "No files found in the project directory."
         file_list = "\n".join(f"  - {f}" for f in files)
         return f"Files in project directory:\n{file_list}"
 
-    return agent
+    return [read_file_tool, edit_file_tool, list_files_tool]
+
+
+def create_model():
+    """Create the ChatOpenAI model configured for OpenRouter."""
+    config = settings.fetch_all()
+    api_key = config.get('openai_api_key', '')
+    api_model = config.get('openai_api_model', 'gpt-4o-mini')
+
+    if not api_key:
+        raise ValueError(
+            "OpenAI API key not configured. Please run 'init' to setup.")
+
+    return ChatOpenAI(
+        model=api_model,
+        api_key=api_key,
+        base_url="https://openrouter.ai/api/v1",
+    )
+
+
+def create_graph(folder_path: Path) -> CompiledStateGraph:
+    """Create and return a configured LangGraph agent."""
+    model = create_model()
+    tools = create_tools(folder_path)
+    
+    graph = create_agent(
+        model,
+        tools=tools,
+        system_prompt=SYSTEM_PROMPT,
+    )
+    
+    return graph
 
 
 def chat_with_project(folder_path: Path, message: str) -> str:
     """Chat with the LaTeX chatbot to perform file operations."""
-    agent = create_agent()
-    context: ProjectContext = {'folder_path': folder_path}
-    result = agent.run_sync(message, deps=context)
-    return result.output
+    graph = create_graph(folder_path)
+    result = graph.invoke({"messages": [("user", message)]})
+    # Get the last AI message
+    ai_messages = [m for m in result["messages"] if hasattr(m, 'type') and m.type == "ai"]
+    if ai_messages:
+        return ai_messages[-1].content
+    return ""

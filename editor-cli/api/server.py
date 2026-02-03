@@ -4,10 +4,6 @@ import sys
 import threading
 import time
 
-import copilotkit
-from fastapi.routing import Mount
-from pydantic_ai.ui.ag_ui.app import AGUIApp
-
 if getattr(sys, "frozen", False):
     os.environ.setdefault("PYDANTIC_DISABLE_PLUGINS", "1")
 
@@ -15,15 +11,13 @@ from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
-from pydantic_ai.ui.ag_ui import AGUIAdapter
-import json
 
 from core import __version__, compiler
 from core import project
 from core import settings
-from core.chat.chatbot import create_agent, ProjectContext
+from core.chat.chatbot import create_graph
 from copilotkit.integrations.fastapi import add_fastapi_endpoint
-from copilotkit import CopilotKitRemoteEndpoint
+from copilotkit import CopilotKitRemoteEndpoint, LangGraphAgent
 
 
 def _start_parent_watcher():
@@ -185,21 +179,24 @@ async def nuke_config():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/chatbot")
-async def get_chatbot(request: Request):
-    agent = create_agent()
-    return await AGUIAdapter.dispatch_request(request, agent=agent)
+def get_agents(context):
+    """Dynamically create agents based on request context."""
+    # Get folder_path from context properties (sent by frontend)
+    properties = context.get("properties", {})
+    folder_path = Path(properties.get("folder_path", "."))
+    
+    return [
+        LangGraphAgent(
+            name="latex-chatbot",
+            description="LaTeX assistant that can read, write, and modify LaTeX files",
+            graph=create_graph(folder_path),
+        )
+    ]
 
 
-# CopilotKit runtime endpoint
-runtime = CopilotKitRemoteEndpoint(agents=[create_agent()])
-
-add_fastapi_endpoint(fastapi_app=app, sdk=runtime, prefix="/chatbot")
-
-# ai_app.mount("/content", content_app)
-# Mount apps
-# app.mount("/", ai_app)
-# app.mount("/content", content_app)
+# CopilotKit runtime endpoint with dynamic agent creation
+runtime = CopilotKitRemoteEndpoint(agents=get_agents)
+add_fastapi_endpoint(fastapi_app=app, sdk=runtime, prefix="/copilotkit")
 
 
 def main():
