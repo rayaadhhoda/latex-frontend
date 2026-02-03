@@ -16,7 +16,7 @@ export default function Editor() {
 
   return (
     <EditorProvider dir={dir}>
-      <CopilotKit runtimeUrl={runtimeUrl} agent="latex-chatbot">
+      <CopilotKit runtimeUrl={runtimeUrl}>
       <div className="flex h-screen">
         {/* Left Panel - Chat & Code Tabs */}
         <div className="w-1/3 flex flex-col border-r">

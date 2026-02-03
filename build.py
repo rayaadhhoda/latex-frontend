@@ -175,10 +175,7 @@ def build_pyinstaller(target_triple: str) -> Path:
     if dist_dir.exists():
         shutil.rmtree(dist_dir)
 
-    copy_metadata = [
-        "genai_prices",
-        "pydantic_ai_slim",
-    ]
+    copy_metadata = []
 
     # Build the command with hidden imports
     cmd = [
@@ -200,7 +197,7 @@ def build_pyinstaller(target_triple: str) -> Path:
     ]
     for module in copy_metadata:
         cmd.extend(["--copy-metadata", module])
-    cmd.append("cli/server.py")
+    cmd.append("api/server.py")
 
     # Run PyInstaller via uv to use the dev dependency
     run(cmd, cwd=CLI_DIR)
