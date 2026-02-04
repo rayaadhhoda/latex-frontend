@@ -173,8 +173,6 @@ async def nuke_config():
 
 
 def get_agents(context):
-    """Dynamically create agents based on request context."""
-    # Get folder_path from context properties (sent by frontend)
     properties = context.get("properties", {})
     folder_path = Path(properties.get("folder_path", "."))
     print(folder_path, 'asdasd')
