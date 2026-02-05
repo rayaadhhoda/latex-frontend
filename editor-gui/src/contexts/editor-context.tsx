@@ -6,7 +6,7 @@ import {
   type ReactNode,
   useEffect,
 } from "react";
-import { compileProject, getPDF, initProject, listFiles } from "@/api/client";
+import { compileProject, getPDF, initProject, listFiles, getFileContent, updateFileContent } from "@/api/client";
 
 interface EditorContextValue {
   dir: string | null;
@@ -14,7 +14,12 @@ interface EditorContextValue {
   pdf: Uint8Array | null;
   loading: boolean;
   error: string | null;
+  currentFile: string | null;
+  fileContent: string | null;
   refreshFiles: () => Promise<void>;
+  loadFile: (file: string) => Promise<void>;
+  saveFile: (content: string) => Promise<void>;
+  compileAndRefresh: () => Promise<void>;
 }
 
 const EditorContext = createContext<EditorContextValue | null>(null);
@@ -29,6 +34,8 @@ export function EditorProvider({ dir, children }: EditorProviderProps) {
   const [pdf, setPdf] = useState<Uint8Array | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentFile, setCurrentFile] = useState<string | null>(null);
+  const [fileContent, setFileContent] = useState<string | null>(null);
 
   const refreshFiles = useCallback(async () => {
     if (!dir) return;
@@ -75,6 +82,54 @@ export function EditorProvider({ dir, children }: EditorProviderProps) {
     }
   }, [dir]);
 
+  const loadFile = useCallback(async (file: string) => {
+    if (!dir) return;
+
+    try {
+      setLoading(true);
+      const response = await getFileContent(dir, file);
+      if (response.success && response.data) {
+        setCurrentFile(file);
+        setFileContent(response.data.content);
+      } else {
+        setError(response.detail || "Failed to load file");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load file");
+    } finally {
+      setLoading(false);
+    }
+  }, [dir]);
+
+  const saveFile = useCallback(async (content: string) => {
+    if (!dir || !currentFile) return;
+
+    try {
+      await updateFileContent(dir, currentFile, content);
+      setFileContent(content);
+      // Optionally refresh files list
+      await refreshFiles();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save file");
+      throw err;
+    }
+  }, [dir, currentFile, refreshFiles]);
+
+  const compileAndRefresh = useCallback(async () => {
+    if (!dir) return;
+
+    try {
+      setLoading(true);
+      await compilePDF();
+      const bytes = await getPDF(dir);
+      setPdf(bytes);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to compile PDF");
+    } finally {
+      setLoading(false);
+    }
+  }, [dir, compilePDF]);
+
   useEffect(() => {
     setLoading(true);
     setError(null);
@@ -90,13 +145,25 @@ export function EditorProvider({ dir, children }: EditorProviderProps) {
     })();
   }, [dir, refreshFiles]);
 
+  // Auto-load main.tex when files are loaded
+  useEffect(() => {
+    if (files.length > 0 && !currentFile && files.includes("main.tex")) {
+      loadFile("main.tex");
+    }
+  }, [files, currentFile, loadFile]);
+
   const value: EditorContextValue = {
     dir,
     files,
     pdf,
     loading,
     error,
+    currentFile,
+    fileContent,
     refreshFiles,
+    loadFile,
+    saveFile,
+    compileAndRefresh,
   };
 
   return (
