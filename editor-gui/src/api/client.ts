@@ -121,3 +121,27 @@ export async function nukeConfig(): Promise<ApiResponse<{ message: string }>> {
     method: "POST",
   });
 }
+
+export async function getFileContent(
+  dir: string,
+  file: string,
+  options?: RequestInit,
+): Promise<ApiResponse<{ content: string; file: string }>> {
+  return request(
+    `${API_ENDPOINTS.FILES}/content?dir=${encodeURIComponent(dir)}&file=${encodeURIComponent(file)}`,
+    options,
+  );
+}
+
+export async function updateFileContent(
+  dir: string,
+  file: string,
+  content: string,
+  options?: RequestInit,
+): Promise<ApiResponse<{ message: string }>> {
+  return request(`${API_ENDPOINTS.FILES}/content`, {
+    method: "PUT",
+    body: JSON.stringify({ dir, file, content }),
+    ...options,
+  });
+}

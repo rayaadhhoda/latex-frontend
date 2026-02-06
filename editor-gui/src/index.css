@@ -122,3 +122,65 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Accessibility: Text Size */
+[data-text-size="small"] {
+  font-size: 0.875rem;
+}
+
+[data-text-size="small"] * {
+  font-size: inherit;
+}
+
+[data-text-size="medium"] {
+  font-size: 1rem;
+}
+
+[data-text-size="large"] {
+  font-size: 1.125rem;
+}
+
+[data-text-size="large"] * {
+  font-size: inherit;
+}
+
+/* Accessibility: High Contrast */
+.high-contrast {
+  --background: oklch(0 0 0);
+  --foreground: oklch(1 0 0);
+  --card: oklch(0.1 0 0);
+  --card-foreground: oklch(1 0 0);
+  --primary: oklch(1 0 0);
+  --primary-foreground: oklch(0 0 0);
+  --border: oklch(1 0 0);
+  --muted: oklch(0.2 0 0);
+  --muted-foreground: oklch(1 0 0);
+}
+
+.high-contrast * {
+  border-color: oklch(1 0 0) !important;
+}
+
+/* Screen Reader Only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Accessibility: Magnifier */
+.magnifier-active {
+  zoom: 1.2;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .magnifier-active {
+    transition: zoom 0.2s ease;
+  }
+}

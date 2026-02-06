@@ -1,53 +1,70 @@
 import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CodeEditor from "@/components/code-editor";
-import AIChat from "@/components/ai-chat";
-import { EditorProvider } from "@/contexts/editor-context";
+import { EditorProvider, useEditor } from "@/contexts/editor-context";
+import TopNavigation from "@/components/top-navigation";
+import FileBrowser from "@/components/file-browser";
+import AIRefine from "@/components/ai-refine";
 import PDFView from "@/components/pdf-view";
-import { CopilotKit } from "@copilotkit/react-core";
-import { API_BASE_URL, API_ENDPOINTS } from "@/api/constants";
 
-
-export default function Editor() {
-  const [searchParams] = useSearchParams();
-  const dir = searchParams.get("dir");
-  if (!dir) {
-    throw new Error("Directory not found");
-  }
-  const runtimeUrl = `${API_BASE_URL}${API_ENDPOINTS.CHATBOT}`;
+function EditorContent() {
+  const { currentFile, compileAndRefresh, loadFile } = useEditor();
 
   return (
-    <EditorProvider dir={dir}>
-      <CopilotKit
-        runtimeUrl={runtimeUrl}
-        agent="0"
-        // showDevConsole={true}
-        properties={{ folder_path: dir }}>
-      <div className="flex h-screen">
-        {/* Left Panel - Chat & Code Tabs */}
-        <div className="w-1/3 flex flex-col border-r">
-          <Tabs defaultValue="chat" className="flex flex-col h-full">
-            <div className="p-2 border-b">
+    <div className="flex flex-col h-screen">
+      {/* Top Navigation */}
+      <TopNavigation 
+        currentFile={currentFile || undefined}
+        onCompile={compileAndRefresh}
+      />
+
+      {/* Main Content Area */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Sidebar - Files */}
+        <div className="w-64 shrink-0">
+          <FileBrowser 
+            selectedFile={currentFile}
+            onFileSelect={loadFile}
+          />
+        </div>
+
+        {/* Center Panel - Code Editor */}
+        <div className="flex-1 flex flex-col border-r">
+          <Tabs defaultValue="preview" className="flex flex-col h-full">
+            <div className="p-2 border-b flex items-center">
               <TabsList>
-                <TabsTrigger value="chat">Chat</TabsTrigger>
-                <TabsTrigger value="code">Source</TabsTrigger>
+                <TabsTrigger value="preview">PREVIEW</TabsTrigger>
+                <TabsTrigger value="source">SOURCE</TabsTrigger>
               </TabsList>
+              <a href="#" className="ml-auto text-xs text-muted-foreground hover:underline" onClick={(e) => { e.preventDefault(); }}>
+                &gt; Logs
+              </a>
             </div>
-            <TabsContent value="chat" className="flex-1 p-4 m-0">
-              <AIChat />
-            </TabsContent>
-            <TabsContent value="code" className="flex-1 p-4 m-0">
+            <TabsContent value="source" className="flex-1 m-0">
               <CodeEditor />
+            </TabsContent>
+            <TabsContent value="preview" className="flex-1 m-0">
+              <PDFView />
             </TabsContent>
           </Tabs>
         </div>
 
-        {/* Right Panel - PDF Viewer */}
-        <div className="w-2/3 flex items-center justify-center bg-muted/30">
-          <PDFView />
+        {/* Right Sidebar - AI Assistant */}
+        <div className="w-80 shrink-0">
+          <AIRefine />
         </div>
       </div>
-      </CopilotKit>
+    </div>
+  );
+}
+
+export default function Editor() {
+  const [searchParams] = useSearchParams();
+  const dir = searchParams.get("dir");
+
+  return (
+    <EditorProvider dir={dir}>
+      <EditorContent />
     </EditorProvider>
   );
 }

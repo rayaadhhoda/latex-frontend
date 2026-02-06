@@ -13,5 +13,5 @@ export const API_ENDPOINTS = {
   PDF: "/pdf",
   CONFIG: "/config",
   NUKE: "/nuke",
-  CHATBOT: "/copilotkit",
+  CHATBOT: "/chatbot",
 } as const;
