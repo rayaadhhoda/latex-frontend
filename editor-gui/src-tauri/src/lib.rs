@@ -23,16 +23,18 @@ pub fn run() {
             // Log sidecar output for debugging
             tauri::async_runtime::spawn(async move {
                 use tauri_plugin_shell::process::CommandEvent;
+                use chrono::Local;
                 while let Some(event) = rx.recv().await {
+                    let ts = Local::now().format("%H:%M:%S");
                     match event {
                         CommandEvent::Stdout(line) => {
-                            println!("[sidecar stdout] {}", String::from_utf8_lossy(&line));
+                            println!("[{} sidecar stdout] {}", ts, String::from_utf8_lossy(&line));
                         }
                         CommandEvent::Stderr(line) => {
-                            eprintln!("[sidecar stderr] {}", String::from_utf8_lossy(&line));
+                            eprintln!("[{} sidecar stderr] {}", ts, String::from_utf8_lossy(&line));
                         }
                         CommandEvent::Terminated(payload) => {
-                            println!("[sidecar] terminated with code: {:?}", payload.code);
+                            println!("[{} sidecar] terminated with code: {:?}", ts, payload.code);
                         }
                         _ => {}
                     }

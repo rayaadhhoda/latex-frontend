@@ -3,8 +3,12 @@ from textwrap import dedent
 
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
-from langchain.agents import create_agent
+from langchain_core.messages import SystemMessage
+from langgraph.graph import StateGraph, START
 from langgraph.graph.state import CompiledStateGraph
+from langgraph.prebuilt import ToolNode, tools_condition
+from langgraph.checkpoint.memory import MemorySaver
+from copilotkit import CopilotKitState
 
 from core.project.read import read_file, list_files
 from core.project.edit import edit_file
@@ -100,22 +104,21 @@ def create_graph(folder_path: Path) -> CompiledStateGraph:
     """Create and return a configured LangGraph agent."""
     model = create_model()
     tools = create_tools(folder_path)
+    model_with_tools = model.bind_tools(tools)
 
-    graph = create_agent(
-        model,
-        tools=tools,
-        system_prompt=SYSTEM_PROMPT,
-    )
+    def call_model(state: CopilotKitState):
+        messages = [SystemMessage(content=SYSTEM_PROMPT)] + state["messages"]
+        return {"messages": [model_with_tools.invoke(messages)]}
+
+    # Build the graph
+    workflow = StateGraph(CopilotKitState)
+    workflow.add_node("agent", call_model)
+    workflow.add_node("tools", ToolNode(tools))
+    workflow.add_edge(START, "agent")
+    workflow.add_conditional_edges("agent", tools_condition)
+    workflow.add_edge("tools", "agent")
+
+    memory = MemorySaver()
+    graph = workflow.compile(checkpointer=memory)
 
     return graph
-
-
-def chat_with_project(folder_path: Path, message: str) -> str:
-    """Chat with the LaTeX chatbot to perform file operations."""
-    graph = create_graph(folder_path)
-    result = graph.invoke({"messages": [("user", message)]})
-    # Get the last AI message
-    ai_messages = [m for m in result["messages"] if hasattr(m, 'type') and m.type == "ai"]
-    if ai_messages:
-        return ai_messages[-1].content
-    return ""

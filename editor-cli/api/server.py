@@ -4,17 +4,19 @@ import sys
 import threading
 import time
 
-from copilotkit import CopilotKitRemoteEndpoint, LangGraphAgent
-from copilotkit.integrations.fastapi import add_fastapi_endpoint as add_copilotkit_fastapi_endpoint
+from ag_ui.core.types import RunAgentInput
+from ag_ui.encoder import EventEncoder
+from copilotkit import LangGraphAGUIAgent
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
 from core import __version__, compiler
 from core import project
 from core import settings
 from core.chat.chatbot import create_graph
+
 
 if getattr(sys, "frozen", False):
     os.environ.setdefault("PYDANTIC_DISABLE_PLUGINS", "1")
@@ -54,6 +56,10 @@ class UpdateConfigRequest(BaseModel):
     openai_api_key: str | None = None
     openai_api_model: str | None = None
     full_name: str | None = None
+
+
+class UpdateFileContentRequest(BaseModel):
+    content: str
 
 
 app = FastAPI(title="LaTeX Chatbot API")
@@ -116,6 +122,32 @@ async def list_files(dir: str = Query(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/files/content")
+async def get_file_content(dir: str = Query(...), file: str = Query(...)):
+    try:
+        file_path = Path(dir) / file
+        content = project.read.read_file(file_path)
+        return {"success": True, "data": {"content": content}}
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"File not found: {file}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/files/content")
+async def update_file_content(
+        dir: str = Query(...),
+        file: str = Query(...),
+        request: UpdateFileContentRequest = None,
+):
+    try:
+        file_path = Path(dir) / file
+        project.edit.edit_file(file_path, request.content)
+        return {"success": True, "data": {"message": f"File updated: {file}"}}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/pdf")
 async def get_pdf(dir: str = Query(...)):
     try:
@@ -172,24 +204,53 @@ async def nuke_config():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def get_agents(context):
-    properties = context.get("properties", {})
-    folder_path = Path(properties.get("folder_path", "."))
-    print(folder_path, 'asdasd')
+@app.post("/copilotkit")
+@app.post("/copilotkit/")
+@app.post("/copilotkit/{path:path}")
+async def copilotkit_handler(request: Request, path: str = ""):
+    """Handle both CopilotKit info/discovery and AG-UI agent execution."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
 
-    return [
-        LangGraphAgent(
-            graph=create_graph(folder_path),
-            name="latex-chatbot",
-        )
-    ]
+    method = body.get("method", "")
+    inner = body.get("body", {}) or {}
+
+    # AG-UI execution requests are routed via the "method" envelope
+    if method and method != "info":
+        # The actual AG-UI payload is nested inside "body"
+        input_data = RunAgentInput(**inner)
+        forwarded_props = input_data.forwarded_props or {}
+        folder_path = Path(forwarded_props.get("folder_path",
+                                               forwarded_props.get("folderPath", ".")))
+
+        graph = create_graph(folder_path)
+        agent = LangGraphAGUIAgent(name="0", graph=graph)
+
+        accept_header = request.headers.get("accept")
+        encoder = EventEncoder(accept=accept_header)
+
+        async def event_generator():
+            async for event in agent.run(input_data):
+                yield encoder.encode(event)
+
+        return StreamingResponse(event_generator(),
+                                 media_type=encoder.get_content_type())
+
+    # Info / discovery request
+    return JSONResponse({
+        "agents": [{
+            "name": "0",
+            "description":
+            "A LaTeX chatbot that can read, write, and modify LaTeX files.",
+            "type": "langgraph",
+        }],
+        "actions": [],
+        "sdkVersion": __version__,
+    })
 
 
-# CopilotKit runtime endpoint with dynamic agent creation
-runtime = CopilotKitRemoteEndpoint(agents=get_agents)
-add_copilotkit_fastapi_endpoint(fastapi_app=app,
-                                sdk=runtime,
-                                prefix="/copilotkit")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

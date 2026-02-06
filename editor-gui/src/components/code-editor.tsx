@@ -87,6 +87,7 @@ export default function CodeEditor({
       editorRef.current.updateOptions({
         fontSize: editorFontSize,
         lineNumbers: showLineNumbers ? "on" : "off",
+        language: 'tex',
       });
     }
   }, [editorFontSize, showLineNumbers]);

@@ -4,6 +4,7 @@ import tomlkit
 
 def fetch_all() -> dict:
     config_dir = get_config_dir()
+    print(config_dir, 'asdasd')
     config_file = config_dir / "config.toml"
     if not config_file.exists():
         return {}
