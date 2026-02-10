@@ -44,7 +44,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-:root {
+::root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -184,3 +184,24 @@
     transition: zoom 0.2s ease;
   }
 }
+
+/* CopilotKit chat layout tweaks */
+.copilotKitMessages {
+  flex: 1;
+  min-height: 0;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  overflow-y: auto;
+}
+
+.copilotKitMessagesContainer {
+  row-gap: 0.5rem;
+}
+
+/* Hide CopilotKit floating inspector trigger button */
+button[title^="Open Inspector (Drag to move)"],
+button[title^="Inspector (License Key Required, Drag to move)"] {
+  display: none !important;
+}
+
+
