@@ -1,6 +1,9 @@
 import { useCoAgent } from "@copilotkit/react-core";
 import { CopilotChat } from "@copilotkit/react-ui";
 
+import { CustomAssistantMessage } from "@/components/chat/assistant-message";
+import { CustomUserMessage } from "@/components/chat/user-message";
+
 type AgentState = {
   messages: any[];
 };
@@ -26,7 +29,6 @@ export default function AIChat() {
           <span className="ml-auto text-muted-foreground font-mono">
             Node: {nodeName}
           </span>
-
         </div>
         <div className="flex items-center gap-3 text-muted-foreground">
           {threadId && <span>thread: {threadId.slice(0, 8)}</span>}
@@ -35,9 +37,13 @@ export default function AIChat() {
       </div>
 
       {/* Chat */}
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 overflow-y-auto p-2">
+        {/* TODO: Add errors and custom labels */}
         <CopilotChat
-          labels={{ initial: "Hi, I'm an agent. Want to chat?" }}
+          disableSystemMessage
+          // labels={{ initial: "Hi, I'm an agent. Want to chat?" }}
+          AssistantMessage={CustomAssistantMessage}
+          UserMessage={CustomUserMessage}
         />
       </div>
     </div>

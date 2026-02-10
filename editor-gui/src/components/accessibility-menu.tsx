@@ -28,7 +28,7 @@ export default function AccessibilityMenu({ onClose }: AccessibilityMenuProps) {
     <Card className="w-80 shadow-lg">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
-          <Accessibility className="h-5 w-5" />
+          <Eye className="h-5 w-5" />
           Accessibility
         </CardTitle>
         <Button

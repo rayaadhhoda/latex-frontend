@@ -1,5 +1,5 @@
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CodeEditor from "@/components/code-editor";
 import { EditorProvider, useEditor } from "@/contexts/editor-context";
 import TopNavigation from "@/components/top-navigation";
@@ -10,6 +10,7 @@ import { CopilotKit } from "@copilotkit/react-core";
 
 function EditorContent() {
   const { currentFile, compileAndRefresh, loadFile, dir } = useEditor();
+  const [activeTab, setActiveTab] = useState<"preview" | "source">("preview");
 
   return (
     <CopilotKit
@@ -20,39 +21,26 @@ function EditorContent() {
       <div className="flex flex-col h-screen">
         {/* Top Navigation */}
         <TopNavigation
-          currentFile={currentFile || undefined}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
           onCompile={compileAndRefresh}
         />
 
         {/* Main Content Area */}
         <div className="flex flex-1 overflow-hidden">
-          {/* Left Sidebar - Files */}
-          <div className="w-64 shrink-0">
-            <FileBrowser
-              selectedFile={currentFile}
-              onFileSelect={loadFile}
-            />
-          </div>
+          {/* Left Sidebar - Files (source mode only) */}
+          {activeTab === "source" && (
+            <div className="w-64 shrink-0">
+              <FileBrowser
+                selectedFile={currentFile}
+                onFileSelect={loadFile}
+              />
+            </div>
+          )}
 
-          {/* Center Panel - Code Editor */}
+          {/* Center Panel */}
           <div className="flex-1 flex flex-col border-r">
-            <Tabs defaultValue="preview" className="flex flex-col h-full">
-              <div className="p-2 border-b flex items-center">
-                <TabsList>
-                  <TabsTrigger value="preview">PREVIEW</TabsTrigger>
-                  <TabsTrigger value="source">SOURCE</TabsTrigger>
-                </TabsList>
-                <a href="#" className="ml-auto text-xs text-muted-foreground hover:underline" onClick={(e) => { e.preventDefault(); }}>
-                  &gt; Logs
-                </a>
-              </div>
-              <TabsContent value="source" className="flex-1 m-0">
-                <CodeEditor />
-              </TabsContent>
-              <TabsContent value="preview" className="flex-1 m-0">
-                <PDFView />
-              </TabsContent>
-            </Tabs>
+            {activeTab === "source" ? <CodeEditor /> : <PDFView />}
           </div>
 
           {/* Right Sidebar - AI Assistant */}

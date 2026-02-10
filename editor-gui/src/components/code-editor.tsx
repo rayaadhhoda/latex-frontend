@@ -11,7 +11,6 @@ interface CodeEditorProps {
   theme?: "vs-dark" | "light";
 }
 
-// Simple debounce hook
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
@@ -37,21 +36,24 @@ export default function CodeEditor({
   const { editorFontSize, showLineNumbers } = useSettings();
   const [localContent, setLocalContent] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
-  const [wordCount, setWordCount] = useState(0);
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<Monaco | null>(null);
   
-  // Use theme from context, fallback to prop
-  const editorTheme = propTheme || (isDark ? "vs-dark" : "light");
+  const editorTheme = propTheme || (isDark ? "latexTheme" : "light");
 
-  // Update local content when file content changes
+  const editorLanguage = (() => {
+    if (!currentFile) return language;
+    if (currentFile.endsWith('.bib')) return 'bibtex';
+    if (currentFile.endsWith('.tex') || currentFile.endsWith('.sty') || currentFile.endsWith('.cls')) return 'latex';
+    return language;
+  })();
+
   useEffect(() => {
     if (fileContent !== null) {
       setLocalContent(fileContent);
     }
   }, [fileContent]);
 
-  // Debounce auto-save
   const debouncedContent = useDebounce(localContent, 1000);
 
   useEffect(() => {
@@ -65,15 +67,72 @@ export default function CodeEditor({
 
   const handleChange = (value: string | undefined) => {
     setLocalContent(value || "");
-    // Calculate word count (simple - count words in text, excluding LaTeX commands)
-    const text = value || "";
-    const words = text
-      .replace(/\\[a-zA-Z]+\{([^}]*)\}/g, "$1") // Extract text from LaTeX commands
-      .replace(/\\[a-zA-Z]+/g, "") // Remove LaTeX commands
-      .replace(/[{}[\]]/g, " ") // Replace LaTeX brackets with spaces
-      .split(/\s+/)
-      .filter((w) => w.length > 0);
-    setWordCount(words.length);
+  };
+
+  const handleEditorWillMount = (monaco: Monaco) => {
+    monaco.languages.register({ id: 'latex' });
+    monaco.languages.setMonarchTokensProvider('latex', {
+      tokenizer: {
+        root: [
+          [/\\(?:begin|end|section|subsection|cite|ref)/, 'keyword'],
+          [/\\(?:[a-zA-Z]+)/, 'type'],
+          [/[{}]/, 'delimiter'],
+          [/\$.*?\$/, 'string.math'],
+          [/%.*/, 'comment'],
+        ],
+      },
+    });
+
+    monaco.languages.register({ id: 'bibtex' });
+    monaco.languages.setMonarchTokensProvider('bibtex', {
+      ignoreCase: true,
+      tokenizer: {
+        root: [
+          [/@[a-zA-Z]+/, { token: 'keyword', next: '@entry' }],
+          [/%/, 'comment'],
+        ],
+        entry: [
+          [/[{]/, { token: 'delimiter', next: '@content' }],
+          [/[^ \t\r\n,{]+/, 'variable'],
+          [/,/, 'delimiter'],
+          ['', '', '@pop'],
+        ],
+        content: [
+          [/[a-zA-Z]+(?=\s*=)/, 'attribute.name'],
+          [/=/, 'delimiter'],
+          [/[{]/, { token: 'string', next: '@nestedCurly' }],
+          [/["]/, { token: 'string', next: '@string' }],
+          [/[0-9]+/, 'number'],
+          [/,/, 'delimiter'],
+          [/[}]/, { token: 'delimiter', next: '@pop' }],
+        ],
+        nestedCurly: [
+          [/[^{}]+/, 'string'],
+          [/[{]/, 'string', '@push'],
+          [/[}]/, 'string', '@pop'],
+        ],
+        string: [
+          [/[^"]+/, 'string'],
+          [/["]/, { token: 'string', next: '@pop' }],
+        ],
+      },
+    });
+
+    monaco.editor.defineTheme('latexTheme', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'keyword', foreground: 'C586C0', fontStyle: 'bold' },
+        { token: 'type', foreground: '4EC9B0' },
+        { token: 'comment', foreground: '6A9955' },
+        { token: 'string', foreground: 'CE9178' },
+        { token: 'string.math', foreground: 'DCDCAA' },
+        { token: 'attribute.name', foreground: '9CDCFE' },
+        { token: 'variable', foreground: '4FC1FF' },
+        { token: 'number', foreground: 'B5CEA8' },
+      ],
+      colors: {},
+    });
   };
 
   const handleEditorDidMount = (editor: any, monaco: Monaco) => {
@@ -81,7 +140,6 @@ export default function CodeEditor({
     monacoRef.current = monaco;
   };
 
-  // Update editor options when settings change
   useEffect(() => {
     if (editorRef.current) {
       editorRef.current.updateOptions({
@@ -107,7 +165,6 @@ export default function CodeEditor({
       },
     ]);
 
-    // Restore selection
     if (selectedText) {
       const newStart = {
         lineNumber: selection.startLineNumber,
@@ -165,7 +222,6 @@ export default function CodeEditor({
         </div>
       )}
       
-      {/* Formatting Toolbar */}
       <div className="flex items-center gap-1 px-3 py-2 border-b bg-background">
         <Button
           variant="ghost"
@@ -224,19 +280,19 @@ export default function CodeEditor({
         
         <div className="ml-auto flex items-center gap-2">
           <div className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider border rounded-full text-muted-foreground">
-            LaTeX Syntax
+            {currentFile || "No file"}
           </div>
         </div>
       </div>
 
-      {/* Editor */}
       <div className="flex-1">
       <Editor
         height="100%"
-        language={language}
+        language={editorLanguage}
         theme={editorTheme}
         value={localContent}
         onChange={handleChange}
+          beforeMount={handleEditorWillMount}
         onMount={handleEditorDidMount}
         options={{
           minimap: { enabled: false },
@@ -249,11 +305,6 @@ export default function CodeEditor({
       />
       </div>
 
-      {/* Footer with word count */}
-      <div className="px-4 py-1.5 border-t bg-background flex items-center justify-between text-xs text-muted-foreground">
-        <span>SJSU Academic Instance</span>
-        <span>Words: {wordCount}</span>
-      </div>
     </div>
   );
 }

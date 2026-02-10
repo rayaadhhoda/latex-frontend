@@ -1,110 +1,85 @@
-import { useState, useEffect } from "react";
-import { File, Folder, Plus, FolderPlus } from "lucide-react";
+import { useMemo } from "react";
+import { Folder, Plus, FolderPlus } from "lucide-react";
 import { useEditor } from "@/contexts/editor-context";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import {
+  FileTree,
+  FileTreeFile,
+  FileTreeFolder,
+} from "@/components/ai-elements/file-tree";
 
 interface FileBrowserProps {
   onFileSelect?: (file: string) => void;
   selectedFile?: string | null;
 }
 
-export default function FileBrowser({ onFileSelect, selectedFile }: FileBrowserProps) {
-  const { files, dir } = useEditor();
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+interface TreeNode {
+  folders: Record<string, TreeNode>;
+  files: string[];
+}
 
-  // Organize files into a tree structure
-  const fileTree = files.reduce((acc, file) => {
+function buildTree(files: string[]): TreeNode {
+  const root: TreeNode = { folders: {}, files: [] };
+
+  for (const file of files) {
     const parts = file.split("/");
-    let current = acc;
-    
+    let current = root;
+
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i];
-      const isLast = i === parts.length - 1;
-      
-      if (isLast) {
-        current.files = current.files || [];
+      if (i === parts.length - 1) {
         current.files.push(file);
       } else {
-        current.folders = current.folders || {};
         if (!current.folders[part]) {
           current.folders[part] = { folders: {}, files: [] };
         }
         current = current.folders[part];
       }
     }
-    
-    return acc;
-  }, { folders: {} as Record<string, any>, files: [] as string[] });
+  }
 
-  const toggleFolder = (folderPath: string) => {
-    setExpandedFolders((prev) => {
-      const next = new Set(prev);
-      if (next.has(folderPath)) {
-        next.delete(folderPath);
-      } else {
-        next.add(folderPath);
-      }
-      return next;
-    });
-  };
+  return root;
+}
 
-  const renderFile = (filePath: string, level: number = 0) => {
-    const fileName = filePath.split("/").pop() || filePath;
-    const isSelected = selectedFile === filePath;
-    
-    return (
-      <button
-        key={filePath}
-        onClick={() => onFileSelect?.(filePath)}
-        className={cn(
-          "w-full flex items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-accent rounded-md transition-colors",
-          isSelected && "bg-accent font-medium",
-          level > 0 && `pl-${level * 4 + 3}`
-        )}
-        style={{ paddingLeft: `${level * 16 + 12}px` }}
-      >
-        <File className="h-4 w-4 text-muted-foreground shrink-0" />
-        <span className="truncate">{fileName}</span>
-      </button>
-    );
-  };
+function RenderFile({ filePath, disabled }: { filePath: string; disabled?: boolean }) {
+  const fileName = filePath.split("/").pop() || filePath;
+  return (
+    <FileTreeFile
+      key={filePath}
+      path={disabled ? "" : filePath}
+      name={fileName}
+      className={disabled ? "opacity-40 pointer-events-none" : undefined}
+    />
+  );
+}
 
-  const renderFolder = (folderName: string, folderData: any, path: string, level: number = 0) => {
-    const isExpanded = expandedFolders.has(path);
-    const hasContent = Object.keys(folderData.folders || {}).length > 0 || (folderData.files || []).length > 0;
+function RenderFolder({ name, path, node, disabledFiles }: { name: string; path: string; node: TreeNode; disabledFiles: Set<string> }) {
+  return (
+    <FileTreeFolder path={path} name={name}>
+      {Object.entries(node.folders).map(([childName, childNode]) => (
+        <RenderFolder
+          key={`${path}/${childName}`}
+          name={childName}
+          path={`${path}/${childName}`}
+          node={childNode}
+          disabledFiles={disabledFiles}
+        />
+      ))}
+      {node.files.map((filePath) => (
+        <RenderFile
+          key={filePath}
+          filePath={filePath}
+          disabled={disabledFiles.has(filePath.split("/").pop() || filePath)}
+        />
+      ))}
+    </FileTreeFolder>
+  );
+}
 
-    return (
-      <div key={path}>
-        <button
-          onClick={() => {
-            if (hasContent) {
-              toggleFolder(path);
-            }
-          }}
-          className={cn(
-            "w-full flex items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-accent rounded-md transition-colors",
-            !hasContent && "opacity-50 cursor-default"
-          )}
-          style={{ paddingLeft: `${level * 16 + 12}px` }}
-        >
-          <Folder className={cn(
-            "h-4 w-4 text-muted-foreground shrink-0 transition-all",
-            isExpanded && "text-primary"
-          )} />
-          <span className="truncate">{folderName}</span>
-        </button>
-        {isExpanded && hasContent && (
-          <div>
-            {Object.entries(folderData.folders || {}).map(([name, data]: [string, any]) =>
-              renderFolder(name, data, `${path}/${name}`, level + 1)
-            )}
-            {(folderData.files || []).map((file: string) => renderFile(file, level + 1))}
-          </div>
-        )}
-      </div>
-    );
-  };
+export default function FileBrowser({ onFileSelect, selectedFile }: FileBrowserProps) {
+  const { files } = useEditor();
+  const disabledFiles = new Set(["main.pdf"]);
+  const tree = useMemo(() => buildTree(files), [files]);
 
   return (
     <div className="h-full flex flex-col border-r bg-background">
@@ -130,14 +105,24 @@ export default function FileBrowser({ onFileSelect, selectedFile }: FileBrowserP
       </div>
 
       {/* File Tree */}
-      <div className="flex-1 overflow-y-auto p-2">
-        {/* Root level files */}
-        {(fileTree.files || []).map((file: string) => renderFile(file, 0))}
-        
-        {/* Folders */}
-        {Object.entries(fileTree.folders || {}).map(([name, data]: [string, any]) =>
-          renderFolder(name, data, name, 0)
-        )}
+      <div className="flex-1 overflow-y-auto">
+        <FileTree
+          selectedPath={selectedFile ?? undefined}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          onSelect={onFileSelect as any}
+          className="border-0 rounded-none"
+        >
+          {tree.files.map((filePath) => (
+            <RenderFile
+              key={filePath}
+              filePath={filePath}
+              disabled={disabledFiles.has(filePath.split("/").pop() || filePath)}
+            />
+          ))}
+          {Object.entries(tree.folders).map(([name, node]) => (
+            <RenderFolder key={name} name={name} path={name} node={node} disabledFiles={disabledFiles} />
+          ))}
+        </FileTree>
       </div>
 
       {/* Footer */}

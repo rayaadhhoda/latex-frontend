@@ -120,7 +120,7 @@ export default function Onboarding() {
         openai_api_key: data.apiKey,
         full_name: data.fullName,
       });
-      navigate("/select-dir");
+      navigate("/");
     } catch (error) {
       console.error("Failed to save settings:", error);
       // TODO: Show error toast/notification

@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useEditor } from "@/contexts/editor-context";
 
+const PDF_FILENAME = "main.pdf" as const;
+
 export default function PDFView() {
-  const { pdf, loading, error } = useEditor();
+  const { pdf } = useEditor();
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -18,22 +20,6 @@ export default function PDFView() {
     return () => URL.revokeObjectURL(url);
   }, [pdf]);
 
-  if (loading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <p className="text-muted-foreground">Loading PDF...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <p className="text-destructive">{error}</p>
-      </div>
-    );
-  }
-
   if (!pdfUrl) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -46,7 +32,7 @@ export default function PDFView() {
     <iframe
       src={pdfUrl}
       className="h-full w-full border-0"
-      title="PDF Preview"
+      title={`${PDF_FILENAME} Preview`}
     />
   );
 }
