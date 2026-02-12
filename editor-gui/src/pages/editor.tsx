@@ -17,8 +17,8 @@ function EditorContent() {
       runtimeUrl="http://localhost:8765/copilotkit"
       agent="0"
       properties={{ folder_path: dir }}
-      showDevConsole={true}>
-      <div className="flex flex-col h-screen">
+      showDevConsole={false}>
+      <div className="flex flex-col h-screen overflow-hidden">
         {/* Top Navigation */}
         <TopNavigation
           activeTab={activeTab}

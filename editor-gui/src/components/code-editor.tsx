@@ -35,9 +35,10 @@ export default function CodeEditor({
   const { isDark } = useTheme();
   const { editorFontSize, showLineNumbers } = useSettings();
   const [localContent, setLocalContent] = useState<string>("");
-  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<Monaco | null>(null);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const editorTheme = propTheme || (isDark ? "latexTheme" : "light");
 
@@ -54,19 +55,29 @@ export default function CodeEditor({
     }
   }, [fileContent]);
 
-  const debouncedContent = useDebounce(localContent, 1000);
+  const debouncedContent = useDebounce(localContent, 500);
 
   useEffect(() => {
     if (debouncedContent !== fileContent && debouncedContent !== "" && currentFile) {
-      setIsSaving(true);
       saveFile(debouncedContent)
-        .catch(console.error)
-        .finally(() => setIsSaving(false));
+        .then(() => {
+          setSaveStatus("saved");
+          if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+          savedTimerRef.current = setTimeout(() => setSaveStatus("idle"), 2000);
+        })
+        .catch(console.error);
     }
   }, [debouncedContent, fileContent, currentFile, saveFile]);
 
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    };
+  }, []);
+
   const handleChange = (value: string | undefined) => {
     setLocalContent(value || "");
+    setSaveStatus("saving");
   };
 
   const handleEditorWillMount = (monaco: Monaco) => {
@@ -76,6 +87,7 @@ export default function CodeEditor({
         root: [
           [/\\(?:begin|end|section|subsection|cite|ref)/, 'keyword'],
           [/\\(?:[a-zA-Z]+)/, 'type'],
+          [/\\[%$&#_{}~^]/, 'type'],
           [/[{}]/, 'delimiter'],
           [/\$.*?\$/, 'string.math'],
           [/%.*/, 'comment'],
@@ -216,12 +228,6 @@ export default function CodeEditor({
 
   return (
     <div className="h-full flex flex-col">
-      {isSaving && (
-        <div className="px-4 py-1 text-xs text-muted-foreground bg-muted border-b">
-          Saving...
-        </div>
-      )}
-      
       <div className="flex items-center gap-1 px-3 py-2 border-b bg-background">
         <Button
           variant="ghost"
@@ -279,6 +285,11 @@ export default function CodeEditor({
         </Button>
         
         <div className="ml-auto flex items-center gap-2">
+          {saveStatus !== "idle" && (
+            <span className="text-[10px] text-muted-foreground/60 italic">
+              {saveStatus === "saving" ? "saving file..." : "file saved"}
+            </span>
+          )}
           <div className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider border rounded-full text-muted-foreground">
             {currentFile || "No file"}
           </div>
