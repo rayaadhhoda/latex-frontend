@@ -90,8 +90,7 @@ def create_model():
     api_model = config.get('openai_api_model', 'gpt-4o-mini')
 
     if not api_key:
-        raise ValueError(
-            "OpenAI API key not configured. Please run 'init' to setup.")
+        raise ValueError("OpenAI API key not configured.")
 
     return ChatOpenAI(
         model=api_model,

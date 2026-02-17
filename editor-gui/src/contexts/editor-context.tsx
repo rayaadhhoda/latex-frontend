@@ -6,7 +6,7 @@ import {
   type ReactNode,
   useEffect,
 } from "react";
-import { compileProject, getPDF, initProject, listFiles, getFileContent, updateFileContent } from "@/api/client";
+import { compileProject, getPDF, listFiles, getFileContent, updateFileContent } from "@/api/client";
 
 interface EditorContextValue {
   dir: string | null;
@@ -49,18 +49,6 @@ export function EditorProvider({ dir, children }: EditorProviderProps) {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load files");
-    }
-
-    if (!files.includes("main.tex")) {
-      await initProject(dir, "default");
-
-      // re-list files after init
-      const response = await listFiles(dir);
-      if (response.success && response.data) {
-        setFiles(response.data.files);
-      } else {
-        setError(response.detail || "Failed to load files");
-      }
     }
 
     try {
