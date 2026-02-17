@@ -3,6 +3,7 @@ import { CopilotChat } from "@copilotkit/react-ui";
 
 import { CustomAssistantMessage } from "@/components/chat/assistant-message";
 import { CustomUserMessage } from "@/components/chat/user-message";
+import { AIChatInput } from "@/components/ai-chat-input";
 
 type AgentState = {
   messages: any[];
@@ -15,37 +16,51 @@ export default function AIChat() {
   });
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Agent state panel */}
-      <div className="px-3 py-2 border-b bg-muted/40 space-y-1.5 text-xs">
-        <div className="flex items-center gap-2">
-          <div
-            className={`w-1.5 h-1.5 rounded-full ${running ? "bg-green-500 animate-pulse" : "bg-muted-foreground/40"}`}
-          />
-          <span className="font-medium text-foreground">
-            {running ? "Running" : "Idle"}
+    <div className="flex h-full flex-col rounded-l-lg border-l bg-background/60 backdrop-blur-sm">
+      {/* Header */}
+      <div className="flex items-center gap-2 border-b px-3 py-2">
+        <div className="flex flex-1 flex-col">
+          <span className="text-xs font-semibold tracking-wide text-muted-foreground">
+            AI ASSISTANT
           </span>
-
-          <span className="ml-auto text-muted-foreground font-mono">
-            Node: {nodeName}
+          <span className="text-xs text-muted-foreground">
+            Ask questions about your LaTeX project and files.
           </span>
         </div>
-        <div className="flex items-center gap-3 text-muted-foreground">
-          {threadId && <span>thread: {threadId.slice(0, 8)}</span>}
-          <span>msgs: {state?.messages?.length ?? 0}</span>
+        <div className="flex flex-col items-end gap-1 text-right">
+          <div className="flex items-center gap-1">
+            <span
+              className={`h-2 w-2 rounded-full ${
+                running ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/50"
+              }`}
+            />
+            <span className="text-[11px] font-medium text-muted-foreground">
+              {running ? "Thinking…" : "Ready"}
+            </span>
+          </div>
+          <span className="text-[10px] tabular-nums text-muted-foreground/70">
+            {state?.messages?.length ?? 0} messages · {nodeName}
+            {threadId ? ` · ${threadId.slice(0, 8)}` : ""}
+          </span>
         </div>
       </div>
 
-      {/* Chat */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-2">
-        {/* TODO: Add errors and custom labels */}
+      {/* Chat: fills remaining vertical space */}
+      <div className="flex-1 min-h-0 px-2 py-2">
         <CopilotChat
+          className="flex h-full flex-col"
           disableSystemMessage
-          // labels={{ initial: "Hi, I'm an agent. Want to chat?" }}
+          labels={{
+            initial: "How can I help with this LaTeX project?",
+            placeholder: "",
+          }}
           AssistantMessage={CustomAssistantMessage}
           UserMessage={CustomUserMessage}
+          Input={AIChatInput}
+          imageUploadsEnabled
         />
       </div>
     </div>
   );
 }
+

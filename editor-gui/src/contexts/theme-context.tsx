@@ -16,7 +16,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (stored !== null) {
       return stored === "dark";
     }
-    // Default to light mode
+    // Fall back to OS preference
+    if (typeof window !== "undefined" && window.matchMedia) {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches;
+    }
+    // Default to light mode if no preference available
     return false;
   });
 
