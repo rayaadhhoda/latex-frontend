@@ -18,7 +18,7 @@ function EditorContent() {
       agent="0"
       properties={{ folder_path: dir }}
       showDevConsole={false}>
-      <div className="flex flex-col h-screen">
+      <div className="flex flex-col h-screen overflow-hidden">
         {/* Top Navigation */}
         <TopNavigation
           activeTab={activeTab}

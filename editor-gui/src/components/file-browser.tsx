@@ -1,7 +1,14 @@
 import { useMemo } from "react";
-import { Folder, Plus, FolderPlus } from "lucide-react";
+import { Folder, Plus, FolderPlus, RefreshCw } from "lucide-react";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useEditor } from "@/contexts/editor-context";
 import { Button } from "@/components/ui/button";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import {
   FileTree,
   FileTreeFile,
@@ -23,6 +30,8 @@ function buildTree(files: string[]): TreeNode {
 
   for (const file of files) {
     const parts = file.split("/");
+    // Skip files with any hidden segment (starting with '.')
+    if (parts.some((p) => p.startsWith("."))) continue;
     let current = root;
 
     for (let i = 0; i < parts.length; i++) {
@@ -42,20 +51,47 @@ function buildTree(files: string[]): TreeNode {
 }
 
 function RenderFile({ filePath, disabled }: { filePath: string; disabled?: boolean }) {
+  const { dir } = useEditor();
   const fileName = filePath.split("/").pop() || filePath;
+
+  const handleRevealInFinder = () => {
+    if (dir) {
+      revealItemInDir(`${dir}/${filePath}`);
+    }
+  };
+
   return (
-    <FileTreeFile
-      key={filePath}
-      path={disabled ? "" : filePath}
-      name={fileName}
-      className={disabled ? "opacity-40 pointer-events-none" : undefined}
-    />
+    <ContextMenu>
+      <ContextMenuTrigger>
+        <FileTreeFile
+          key={filePath}
+          path={disabled ? "" : filePath}
+          name={fileName}
+          className={disabled ? "opacity-40 pointer-events-none" : undefined}
+        />
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem onSelect={handleRevealInFinder}>
+          Reveal in Finder
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
 
 function RenderFolder({ name, path, node, disabledFiles }: { name: string; path: string; node: TreeNode; disabledFiles: Set<string> }) {
+  const { dir } = useEditor();
+
+  const handleRevealInFinder = () => {
+    if (dir) {
+      revealItemInDir(`${dir}/${path}`);
+    }
+  };
+
   return (
-    <FileTreeFolder path={path} name={name}>
+    <ContextMenu>
+      <ContextMenuTrigger>
+        <FileTreeFolder path={path} name={name}>
       {Object.entries(node.folders).map(([childName, childNode]) => (
         <RenderFolder
           key={`${path}/${childName}`}
@@ -65,19 +101,26 @@ function RenderFolder({ name, path, node, disabledFiles }: { name: string; path:
           disabledFiles={disabledFiles}
         />
       ))}
-      {node.files.map((filePath) => (
+          {node.files.sort().map((filePath) => (
         <RenderFile
           key={filePath}
           filePath={filePath}
           disabled={disabledFiles.has(filePath.split("/").pop() || filePath)}
         />
       ))}
-    </FileTreeFolder>
+        </FileTreeFolder>
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem onSelect={handleRevealInFinder}>
+          Reveal in Finder
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
 
 export default function FileBrowser({ onFileSelect, selectedFile }: FileBrowserProps) {
-  const { files } = useEditor();
+  const { files, refreshFiles, currentFile, loadFile } = useEditor();
   const disabledFiles = new Set(["main.pdf"]);
   const tree = useMemo(() => buildTree(files), [files]);
 
@@ -97,6 +140,9 @@ export default function FileBrowser({ onFileSelect, selectedFile }: FileBrowserP
             <Button variant="ghost" size="icon-xs" className="h-6 w-6">
               <Plus className="h-3 w-3" />
             </Button>
+            <Button variant="ghost" size="icon-xs" className="h-6 w-6" onClick={async () => { await refreshFiles(); if (currentFile) await loadFile(currentFile); }}>
+              <RefreshCw className="h-3 w-3" />
+            </Button>
           </div>
         </div>
         <div className="text-xs font-medium text-muted-foreground uppercase">
@@ -112,15 +158,15 @@ export default function FileBrowser({ onFileSelect, selectedFile }: FileBrowserP
           onSelect={onFileSelect as any}
           className="border-0 rounded-none"
         >
+          {Object.entries(tree.folders).map(([name, node]) => (
+            <RenderFolder key={name} name={name} path={name} node={node} disabledFiles={disabledFiles} />
+          ))}
           {tree.files.map((filePath) => (
             <RenderFile
               key={filePath}
               filePath={filePath}
               disabled={disabledFiles.has(filePath.split("/").pop() || filePath)}
             />
-          ))}
-          {Object.entries(tree.folders).map(([name, node]) => (
-            <RenderFolder key={name} name={name} path={name} node={node} disabledFiles={disabledFiles} />
           ))}
         </FileTree>
       </div>
