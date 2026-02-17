@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useEditor } from "@/contexts/editor-context";
 import { useTheme } from "@/contexts/theme-context";
-import { compileProject } from "@/api/client";
 import { useState, useRef, useEffect } from "react";
 import SettingsMenu from "./settings-menu";
 
@@ -27,14 +26,11 @@ export default function TopNavigation({ activeTab, onTabChange, onCompile }: Top
   };
 
   const handleCompile = async () => {
-    if (!dir) return;
+    if (!dir || !onCompile) return;
     
     setIsCompiling(true);
     try {
-      await compileProject(dir);
-      if (onCompile) {
-        onCompile();
-      }
+      await onCompile();
     } catch (error) {
       console.error("Compilation failed:", error);
     } finally {

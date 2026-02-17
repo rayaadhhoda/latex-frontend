@@ -1,6 +1,5 @@
 from pathlib import Path
 from textwrap import dedent
-
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
 from langchain_core.messages import SystemMessage
@@ -9,26 +8,63 @@ from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.checkpoint.memory import MemorySaver
 from copilotkit import CopilotKitState
+from core.compiler import compile_project
 
 from core.project.read import read_file, list_files
 from core.project.edit import edit_file
 from core import settings
 
 SYSTEM_PROMPT = dedent(
-    """You are a helpful LaTeX assistant that can read, write, and modify LaTeX files 
+    """ You are a helpful LaTeX assistant that can read, write, and modify LaTeX files 
         based on user requests. You have access to tools that allow you to:
         1. List files in the project directory
         2. Read the contents of any file
         3. Edit/write the contents of any file
+        4. Compile the LaTeX project
 
+        # Workflow
         When a user asks you to modify LaTeX files, you should:
         - First, list files to understand the project structure if needed
         - Read relevant files to understand the current content
         - Make the requested changes
         - Write the updated content back to the file
-
-        Always be careful to preserve LaTeX syntax and formatting. When editing files, provide the complete 
-        file content, not just the changed sections.""")
+        - Compile the LaTeX project to check for errors
+        - If the compilation fails, you should try to fix the error.
+        - However, do not attempt to compile or fix compilation errors more than three times within a single user request.
+        - Always be careful to preserve LaTeX syntax and formatting.
+        - When editing files, provide the complete file content, not just the changed sections.
+        
+        # Integrity Checks
+        You must always aim to make minimal changes to the project. Do not add content that is not provided by the user.
+        All content will be provided by the user. Even if asked to generate text, insist that the user provides the content.
+        
+        # Directory structure
+        The given folder is the root of the LaTeX project.
+        - The project should have a main.tex file.
+          This is the top level file that is compiled.
+          It should use \\input to include other files.
+          None of the section Contents should be directly in the main.tex file.
+        - The project should have a refs.bib file.
+          This is the bibliography file.
+          It should be referenced in the main.tex file using \\bibliography{refs}.
+        - The project should have a figures/ directory.
+          This is the directory for the figures.
+          Figures are referenced in the sections as requested by the user.
+          Use the following syntax: 
+            \\begin{figure}[htbp]
+            \\centerline{\\includegraphics[width=1.1\\linewidth]{figures/fig2.png}}
+            \\caption{Figure caption}
+            \\label{figure_label}
+            \\end{figure}
+        - The project should have a tables/ directory.
+          Tables are referenced in the sections as requested by the user.
+        - The project should have a sections/ directory.
+          Sections are referenced in the main.tex file using \\input{sections/section_name}.
+          All of the text content goes in the sections.
+          If there are subsections, each subsection should be in a separate file.
+          For example, for section 1.1, the file should be called 1_1.tex and should be imported in 1.tex using \\input{1_1}.
+          Then, 1.tex is imported in main.tex using \\input{sections/1}.
+        """)
 
 
 def create_tools(folder_path: Path):
@@ -80,7 +116,21 @@ def create_tools(folder_path: Path):
         file_list = "\n".join(f"  - {f}" for f in files)
         return f"Files in project directory:\n{file_list}"
 
-    return [read_file_tool, edit_file_tool, list_files_tool]
+    @tool
+    def compile_latex_tool() -> str:
+        """Compile the LaTeX project."""
+        result = compile_project(folder_path)
+        if result.success:
+            return "SUCCESS"
+        print(result.stderr)
+        return f"FAILED: {result.stderr}"
+
+    return [
+        read_file_tool,
+        edit_file_tool,
+        list_files_tool,
+        compile_latex_tool,
+    ]
 
 
 def create_model():
@@ -109,7 +159,6 @@ def create_graph(folder_path: Path) -> CompiledStateGraph:
         messages = [SystemMessage(content=SYSTEM_PROMPT)] + state["messages"]
         return {"messages": [model_with_tools.invoke(messages)]}
 
-    # Build the graph
     workflow = StateGraph(CopilotKitState)
     workflow.add_node("agent", call_model)
     workflow.add_node("tools", ToolNode(tools))

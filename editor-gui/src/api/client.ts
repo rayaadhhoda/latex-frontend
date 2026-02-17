@@ -46,7 +46,7 @@ export async function initProject(
 export async function compileProject(
   dir: string,
   options?: RequestInit,
-): Promise<ApiResponse<{ result: string }>> {
+): Promise<ApiResponse<{ pdf_path?: string | null; stdout: string; stderr: string }>> {
   return request(API_ENDPOINTS.COMPILE, {
     method: "POST",
     body: JSON.stringify({ dir }),
@@ -139,9 +139,12 @@ export async function updateFileContent(
   content: string,
   options?: RequestInit,
 ): Promise<ApiResponse<{ message: string }>> {
-  return request(`${API_ENDPOINTS.FILES}/content`, {
-    method: "PUT",
-    body: JSON.stringify({ dir, file, content }),
-    ...options,
-  });
+  return request(
+    `${API_ENDPOINTS.FILES}/content?dir=${encodeURIComponent(dir)}&file=${encodeURIComponent(file)}`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ content }),
+      ...options,
+    },
+  );
 }

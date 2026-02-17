@@ -14,12 +14,14 @@ interface EditorContextValue {
   pdf: Uint8Array | null;
   loading: boolean;
   error: string | null;
+  compileError: string | null;
   currentFile: string | null;
   fileContent: string | null;
   refreshFiles: () => Promise<void>;
   loadFile: (file: string) => Promise<void>;
   saveFile: (content: string) => Promise<void>;
   compileAndRefresh: () => Promise<void>;
+  clearCompileError: () => void;
 }
 
 const EditorContext = createContext<EditorContextValue | null>(null);
@@ -34,6 +36,7 @@ export function EditorProvider({ dir, children }: EditorProviderProps) {
   const [pdf, setPdf] = useState<Uint8Array | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [compileError, setCompileError] = useState<string | null>(null);
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string | null>(null);
 
@@ -64,9 +67,25 @@ export function EditorProvider({ dir, children }: EditorProviderProps) {
     if (!dir) return;
 
     try {
-      await compileProject(dir);
+      const response = await compileProject(dir);
+      const stderr = response.data?.stderr?.trim();
+
+      if (!response.success) {
+        if (stderr) {
+          setCompileError(stderr);
+        } else {
+          setCompileError(response.detail || "Failed to compile PDF");
+        }
+      } else {
+        if (stderr) {
+          setCompileError(stderr);
+        } else {
+          setCompileError(null);
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to compile PDF");
+      setCompileError(err instanceof Error ? err.message : "Failed to compile PDF");
     }
   }, [dir]);
 
@@ -146,12 +165,14 @@ export function EditorProvider({ dir, children }: EditorProviderProps) {
     pdf,
     loading,
     error,
+    compileError,
     currentFile,
     fileContent,
     refreshFiles,
     loadFile,
     saveFile,
     compileAndRefresh,
+    clearCompileError: () => setCompileError(null),
   };
 
   return (

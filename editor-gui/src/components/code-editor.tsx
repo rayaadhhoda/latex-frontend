@@ -31,11 +31,12 @@ export default function CodeEditor({
   language = "latex",
   theme: propTheme,
 }: CodeEditorProps) {
-  const { fileContent, currentFile, saveFile, loading } = useEditor();
+  const { fileContent, currentFile, saveFile, loading, compileError, clearCompileError } = useEditor();
   const { isDark } = useTheme();
   const { editorFontSize, showLineNumbers } = useSettings();
   const [localContent, setLocalContent] = useState<string>("");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<Monaco | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -285,6 +286,15 @@ export default function CodeEditor({
         </Button>
         
         <div className="ml-auto flex items-center gap-2">
+          {compileError && (
+            <button
+              type="button"
+              onClick={() => setIsErrorDialogOpen(true)}
+              className="px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider rounded-full border border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+            >
+              Error
+            </button>
+          )}
           {saveStatus !== "idle" && (
             <span className="text-[10px] text-muted-foreground/60 italic">
               {saveStatus === "saving" ? "saving file..." : "file saved"}
@@ -297,24 +307,51 @@ export default function CodeEditor({
       </div>
 
       <div className="flex-1">
-      <Editor
-        height="100%"
-        language={editorLanguage}
-        theme={editorTheme}
-        value={localContent}
-        onChange={handleChange}
+        <Editor
+          height="100%"
+          language={editorLanguage}
+          theme={editorTheme}
+          value={localContent}
+          onChange={handleChange}
           beforeMount={handleEditorWillMount}
-        onMount={handleEditorDidMount}
-        options={{
-          minimap: { enabled: false },
-          fontSize: editorFontSize,
-          lineNumbers: showLineNumbers ? "on" : "off",
-          wordWrap: "on",
-          automaticLayout: true,
-          scrollBeyondLastLine: true,
-        }}
-      />
+          onMount={handleEditorDidMount}
+          options={{
+            minimap: { enabled: false },
+            fontSize: editorFontSize,
+            lineNumbers: showLineNumbers ? "on" : "off",
+            wordWrap: "on",
+            automaticLayout: true,
+            scrollBeyondLastLine: true,
+          }}
+        />
       </div>
+
+      {compileError && isErrorDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm">
+          <div className="bg-popover text-popover-foreground max-w-lg w-[90%] rounded-lg border shadow-lg">
+            <div className="px-4 py-3 border-b">
+              <h2 className="text-sm font-semibold">Compilation Error</h2>
+            </div>
+            <div className="max-h-80 overflow-auto px-4 py-3">
+              <pre className="whitespace-pre-wrap text-xs font-mono text-muted-foreground">
+                {compileError}
+              </pre>
+            </div>
+            <div className="flex justify-end gap-2 px-4 py-3 border-t">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  clearCompileError();
+                  setIsErrorDialogOpen(false);
+                }}
+              >
+                Dismiss
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

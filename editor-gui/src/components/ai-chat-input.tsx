@@ -2,6 +2,7 @@ import { useMemo, useState, useRef, type KeyboardEvent } from "react";
 import type { InputProps } from "@copilotkit/react-ui";
 
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { Paperclip, Send, Square } from "lucide-react";
 
@@ -53,14 +54,14 @@ export function AIChatInput({
   };
 
   return (
-    <div className="mt-2 border-t bg-background/95 px-3 pb-3 pt-2">
+    <div className="mt-2 bg-background/95 px-3 pb-3 pt-2">
       <div className="rounded-lg border bg-background/90 px-2.5 py-2 shadow-sm">
-        <textarea
+        <Textarea
           ref={textareaRef}
           rows={1}
           className={cn(
-            "max-h-32 w-full resize-none bg-transparent text-xs outline-none",
-            "placeholder:text-muted-foreground",
+            "max-h-32 min-h-0 w-full resize-none border-0 bg-transparent p-0 text-xs shadow-none",
+            "focus-visible:ring-0",
           )}
           placeholder={
             chatReady
@@ -86,9 +87,6 @@ export function AIChatInput({
                 <Paperclip className="h-3.5 w-3.5" />
               </Button>
             )}
-            <span className="text-[10px] text-muted-foreground">
-              Shift+Enter for newline
-            </span>
           </div>
 
           <Button

@@ -222,8 +222,7 @@ async def copilotkit_handler(request: Request, path: str = ""):
         # The actual AG-UI payload is nested inside "body"
         input_data = RunAgentInput(**inner)
         forwarded_props = input_data.forwarded_props or {}
-        folder_path = Path(forwarded_props.get("folder_path",
-                                               forwarded_props.get("folderPath", ".")))
+        folder_path = Path(forwarded_props.get("folder_path", "."))
 
         graph = create_graph(folder_path)
         agent = LangGraphAGUIAgent(name="0", graph=graph)
