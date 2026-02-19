@@ -24,4 +24,4 @@ build:
 	@uv run build.py
 
 do-benchmark:
-	@cd benchmark && uv run benchmark --dir temp run
+	@cd benchmark && uv run benchmark --dir temp run $(filter-out $@,$(MAKECMDGOALS))

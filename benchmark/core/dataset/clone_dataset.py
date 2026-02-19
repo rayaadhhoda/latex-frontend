@@ -5,14 +5,12 @@ import click
 
 
 def clone_dataset(context: dict) -> None:
-    click.echo("+ Cloning dataset items...")
-
     dataset_list = context["dataset"]
 
     with click.progressbar(dataset_list,
                            length=len(dataset_list),
                            update_min_steps=1,
-                           label='+ Cloning dataset items...') as bar:
+                           label='+ Cloning dataset...') as bar:
         for dataset in bar:
             source = Path(
                 importlib.resources.files("core")).parent / "data" / dataset

@@ -32,13 +32,18 @@ def cli(ctx: click.Context, dir: str | None) -> None:
 
 @cli.command()
 @click.pass_context
-def run(ctx: click.Context) -> None:
+@click.option(
+    "--new-only",
+    is_flag=True,
+    help="Run benchmarks for new dataset entries while preserving existing runs.",
+)
+def run(ctx: click.Context, new_only: bool) -> None:
     """Run benchmarks."""
     context = {}
     context["dir"] = Path(ctx.obj.get("dir"))
 
     locate_server(context)
-    load_dataset(context)
+    load_dataset(context, new_only)
     clone_dataset(context)
     run_benchmarks(context)
 

@@ -26,7 +26,8 @@ async def _do_benchmark(context: dict, data_dir: Path) -> None:
         # do chat
         prompt = (data_dir / "prompt.txt").read_text()
         metadata["time_chat_start"] = _get_timestamp()
-        await do_chat(context, str(data_dir), prompt)
+        chat_result = do_chat(context, str(data_dir), prompt)
+        metadata["chat_result"] = chat_result
         metadata["time_chat_end"] = _get_timestamp()
 
          # do score
@@ -35,6 +36,7 @@ async def _do_benchmark(context: dict, data_dir: Path) -> None:
         metadata["time_score_end"] = _get_timestamp()
         metadata["status"] = "completed"
     except Exception as e:
+        click.echo(f"    + Error: {e}")
         metadata["error"] = str(e)
         metadata["status"] = "failed"
     finally:

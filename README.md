@@ -6,9 +6,9 @@ A powerful, AI-assisted LaTeX editor featuring a local FastAPI backend, a Tauri 
 
 The project consists of three main components:
 
-- **`editor-cli`**: A Python-based FastAPI server that handles LaTeX compilation, project management, and AI chat interactions. It uses `langgraph` for agentic workflows.
-- **`editor-gui`**: A desktop application built with Tauri, React, and TypeScript. It bundles the CLI as a sidecar executable.
-- **`benchmark`**: A dedicated CLI tool for evaluating the performance and accuracy of the chatbot agents.
+- **`editor-cli`**: A Python-based FastAPI server. See [Backend Documentation](wiki/Backend.md).
+- **`editor-gui`**: A Tauri + React frontend. See [Frontend Documentation](wiki/Frontend.md).
+- **`benchmark`**: A CLI tool for evaluation. See [Benchmark Documentation](wiki/Benchmark.md).
 
 ## Prerequisites
 

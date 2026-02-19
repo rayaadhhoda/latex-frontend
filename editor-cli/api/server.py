@@ -6,7 +6,7 @@ import threading
 import time
 
 from ag_ui.core.types import RunAgentInput
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from ag_ui.encoder import EventEncoder
 from copilotkit import LangGraphAGUIAgent
 from fastapi import FastAPI, HTTPException, Query, Request
@@ -228,9 +228,37 @@ async def chat(request: ChatRequest):
         config = {"configurable": {"thread_id": thread_id}}
         initial_state = {"messages": [HumanMessage(content=request.prompt)]}
         final_state = graph.invoke(initial_state, config=config)
+        
+        # Extract agent's response messages (AIMessages)
+        agent_responses = [
+            msg for msg in final_state.get("messages", [])
+            if isinstance(msg, AIMessage)
+        ]
+        
+        # Convert AIMessages to serializable format
+        response_data = {
+            "messages": [
+                {
+                    "type": msg.__class__.__name__,
+                    "content": msg.content,
+                    "tool_calls": [
+                        {
+                            "name": tc.get("name"),
+                            "args": tc.get("args"),
+                            "id": tc.get("id"),
+                        }
+                        for tc in (msg.tool_calls or [])
+                    ] if hasattr(msg, "tool_calls") and msg.tool_calls else [],
+                }
+                for msg in agent_responses
+            ],
+            "full_state": final_state,
+        }
+        
+        print(response_data)
         return {
             "success": True,
-            "data": final_state,
+            "data": response_data,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -17,7 +17,7 @@ def locate_server(context: dict) -> str:
         f"  + Status: {context['status']}, Version {context['version']}")
 
 
-def do_chat(context: dict, dir: str, prompt: str) -> str:
+def do_chat(context: dict, dir: str, prompt: str) -> dict:
     response = requests.post(
         f"{BASE_URL}/chat",
         json={
@@ -27,7 +27,7 @@ def do_chat(context: dict, dir: str, prompt: str) -> str:
         timeout=120,
     )
     response.raise_for_status()
-    data = response.json()
-    if not data.get("success"):
-        raise Exception(f"Chat failed: {data}")
-    return data["data"]["response"]
+    res_json = response.json()
+    if not res_json.get("success"):
+        raise Exception(f"Chat failed: {res_json}")
+    return res_json["data"]
