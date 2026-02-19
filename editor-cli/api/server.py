@@ -1,10 +1,12 @@
 import os
+import uuid
 from pathlib import Path
 import sys
 import threading
 import time
 
 from ag_ui.core.types import RunAgentInput
+from langchain_core.messages import HumanMessage
 from ag_ui.encoder import EventEncoder
 from copilotkit import LangGraphAGUIAgent
 from fastapi import FastAPI, HTTPException, Query, Request
@@ -16,6 +18,14 @@ from core import __version__, compiler
 from core import project
 from core import settings
 from core.chat.chatbot import create_graph
+
+
+class SafeLangGraphAGUIAgent(LangGraphAGUIAgent):
+    """LangGraphAGUIAgent that tolerates None in messages_in_process (ag_ui_langgraph bug)."""
+
+    def set_message_in_progress(self, run_id: str, data):
+        current = self.messages_in_process.get(run_id) or {}
+        self.messages_in_process[run_id] = {**(current or {}), **(data or {})}
 
 
 if getattr(sys, "frozen", False):
@@ -60,6 +70,11 @@ class UpdateConfigRequest(BaseModel):
 
 class UpdateFileContentRequest(BaseModel):
     content: str
+
+
+class ChatRequest(BaseModel):
+    dir: str
+    prompt: str
 
 
 app = FastAPI(title="LaTeX Chatbot API")
@@ -204,6 +219,23 @@ async def nuke_config():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/chat")
+async def chat(request: ChatRequest):
+    try:
+        folder_path = Path(request.dir)
+        graph = create_graph(folder_path)
+        thread_id = str(uuid.uuid4())
+        config = {"configurable": {"thread_id": thread_id}}
+        initial_state = {"messages": [HumanMessage(content=request.prompt)]}
+        final_state = graph.invoke(initial_state, config=config)
+        return {
+            "success": True,
+            "data": final_state,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/copilotkit")
 @app.post("/copilotkit/")
 @app.post("/copilotkit/{path:path}")
@@ -225,7 +257,7 @@ async def copilotkit_handler(request: Request, path: str = ""):
         folder_path = Path(forwarded_props.get("folder_path", "."))
 
         graph = create_graph(folder_path)
-        agent = LangGraphAGUIAgent(name="0", graph=graph)
+        agent = SafeLangGraphAGUIAgent(name="0", graph=graph)
 
         accept_header = request.headers.get("accept")
         encoder = EventEncoder(accept=accept_header)

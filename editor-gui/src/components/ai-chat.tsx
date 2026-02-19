@@ -13,7 +13,6 @@ export default function AIChat() {
           className="flex h-full flex-col"
           disableSystemMessage
           labels={{
-            initial: "How can I help with this project?",
             placeholder: "Add this content to section 1...",
           }}
           AssistantMessage={CustomAssistantMessage}

@@ -10,3 +10,7 @@ def read_json(file_path: Path) -> dict:
     with open(str(file_path), "r") as f:
         json_data = json.load(f)
     return json_data
+
+
+def write_json(file_path: Path, data: dict) -> None:
+    file_path.write_text(json.dumps(data, indent=4), encoding="utf-8")

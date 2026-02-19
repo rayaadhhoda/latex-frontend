@@ -39,9 +39,9 @@ export function AIChatInput({
 
     const trimmed = text.trim();
     if (!trimmed) return;
-    await onSend(trimmed);
     setText("");
     textareaRef.current?.focus();
+    await onSend(trimmed);
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -65,7 +65,7 @@ export function AIChatInput({
           )}
           placeholder={
             chatReady
-              ? "Type a message… (Shift+Enter for new line)"
+              ? "Type a message…"
               : "Connecting to assistant…"
           }
           value={text}

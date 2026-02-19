@@ -1,17 +1,39 @@
-# Tauri + React + Typescript
+# LaTeX Chatbot Frontend
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+A modern, responsive desktop application for LaTeX editing, built with Tauri, React, and TypeScript.
 
-## Recommended IDE Setup
+## Features
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+- **Split View Editor**: Real-time preview of LaTeX code side-by-side with the compiled PDF.
+- **AI Integration**: Chat interface for requesting edits, explanations, and code generation.
+- **Project Structure**: Visual file explorer for managing LaTeX projects.
+- **Settings**: Configure LLM providers and editor preferences.
 
-## Sidecar Build
+## Architecture
 
-The GUI bundles the `latex-chatbot-cli` Python application as a sidecar binary. Run `make build` from the project root to:
+This frontend is a React application served by Tauri. It communicates with the backend `editor-cli` sidecar process for heavy lifting (compilation, AI inference).
 
-1. Build the Python wheel via `uv build`
-2. Create a platform-specific executable using PyInstaller
-3. Place the binary in `src-tauri/bin/` with the appropriate target triple suffix
+- **Tauri**: Provides the native window, menu system, and sidecar management.
+- **React**: UI components and state management.
+- **Sonner**: Toast notifications for user feedback.
 
-The sidecar is built for the current host platform only. For cross-platform releases, run the build on each target OS (macOS, Windows, Linux).
+## Development
+
+Prerequisites: Node.js 20+, Rust (stable).
+
+### Running Locally
+
+```bash
+# From project root
+make gui
+```
+
+Or manually:
+
+```bash
+cd editor-gui
+npm install
+npm run tauri dev
+```
+
+The application will launch in a native window, wrapping the React dev server running on `http://localhost:1420`.

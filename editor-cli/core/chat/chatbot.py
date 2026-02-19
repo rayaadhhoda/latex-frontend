@@ -64,7 +64,10 @@ SYSTEM_PROMPT = dedent(
           If there are subsections, each subsection should be in a separate file.
           For example, for section 1.1, the file should be called 1_1.tex and should be imported in 1.tex using \\input{1_1}.
           Then, 1.tex is imported in main.tex using \\input{sections/1}.
-        """)
+        
+
+        If you understand, reply with "Let's get started!"
+        """).strip()
 
 
 def create_tools(folder_path: Path):
@@ -143,6 +146,10 @@ def create_model():
         raise ValueError("OpenAI API key not configured.")
 
     return ChatOpenAI(
+        default_headers={
+            'X-Title': 'LaTeX Chatbot',
+            'HTTP-Referer': 'https://vivekraman.dev/blog/latex-chatbot',
+        },
         model=api_model,
         api_key=api_key,
         base_url="https://openrouter.ai/api/v1",
