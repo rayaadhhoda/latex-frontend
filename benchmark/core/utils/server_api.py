@@ -24,7 +24,7 @@ def do_chat(context: dict, dir: str, prompt: str) -> dict:
             "dir": dir,
             "prompt": prompt
         },
-        timeout=120,
+        timeout=300,
     )
     response.raise_for_status()
     res_json = response.json()
