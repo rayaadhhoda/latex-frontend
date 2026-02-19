@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import CodeEditor from "@/components/code-editor";
 import { EditorProvider, useEditor } from "@/contexts/editor-context";
@@ -11,6 +11,16 @@ import { CopilotKit } from "@copilotkit/react-core";
 function EditorContent() {
   const { currentFile, compileAndRefresh, loadFile, dir } = useEditor();
   const [activeTab, setActiveTab] = useState<"preview" | "source">("preview");
+  const prevInProgressRef = useRef<boolean>(false);
+
+  const handleInProgress = (inProgress: boolean) => {
+    // When inProgress changes from true to false, agent has completed responding
+    if (prevInProgressRef.current && !inProgress) {
+      // Agent just finished responding, fetch PDF and update preview
+      compileAndRefresh();
+    }
+    prevInProgressRef.current = inProgress;
+  };
 
   return (
     <CopilotKit
@@ -45,7 +55,7 @@ function EditorContent() {
 
           {/* Right Sidebar - AI Assistant */}
           <div className="w-80 shrink-0">
-            <AIChat />
+            <AIChat onInProgress={handleInProgress} />
           </div>
         </div>
       </div>

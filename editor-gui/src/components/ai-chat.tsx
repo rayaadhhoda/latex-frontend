@@ -4,7 +4,11 @@ import { CustomAssistantMessage } from "@/components/chat/assistant-message";
 import { CustomUserMessage } from "@/components/chat/user-message";
 import { AIChatInput } from "@/components/ai-chat-input";
 
-export default function AIChat() {
+interface AIChatProps {
+  onInProgress?: (inProgress: boolean) => void;
+}
+
+export default function AIChat({ onInProgress }: AIChatProps) {
 
   return (
     <div className="flex h-full flex-col bg-background/60 backdrop-blur-sm">
@@ -19,6 +23,7 @@ export default function AIChat() {
           UserMessage={CustomUserMessage}
           Input={AIChatInput}
           imageUploadsEnabled
+          onInProgress={onInProgress}
         />
       </div>
     </div>

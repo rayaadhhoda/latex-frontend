@@ -141,8 +141,14 @@ async def list_files(dir: str = Query(...)):
 async def get_file_content(dir: str = Query(...), file: str = Query(...)):
     try:
         file_path = Path(dir) / file
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail=f"File not found: {file}")
+        if not file_path.is_file():
+            raise HTTPException(status_code=400, detail=f"Path is not a file: {file}")
         content = project.read.read_file(file_path)
-        return {"success": True, "data": {"content": content}}
+        return {"success": True, "data": {"content": content, "file": file}}
+    except HTTPException:
+        raise
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail=f"File not found: {file}")
     except Exception as e:

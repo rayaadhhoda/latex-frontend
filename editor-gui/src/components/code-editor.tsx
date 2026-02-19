@@ -11,22 +11,6 @@ interface CodeEditorProps {
   theme?: "vs-dark" | "light";
 }
 
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
-
 export default function CodeEditor({
   language = "latex",
   theme: propTheme,
@@ -38,7 +22,6 @@ export default function CodeEditor({
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
   const editorRef = useRef<any>(null);
-  const monacoRef = useRef<Monaco | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const editorTheme = propTheme || (isDark ? "latexTheme" : "light");
@@ -52,23 +35,11 @@ export default function CodeEditor({
 
   useEffect(() => {
     if (fileContent !== null) {
+      // Reset localContent when file changes or when fileContent updates
       setLocalContent(fileContent);
+      setSaveStatus("idle");
     }
-  }, [fileContent]);
-
-  const debouncedContent = useDebounce(localContent, 500);
-
-  useEffect(() => {
-    if (debouncedContent !== fileContent && debouncedContent !== "" && currentFile) {
-      saveFile(debouncedContent)
-        .then(() => {
-          setSaveStatus("saved");
-          if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
-          savedTimerRef.current = setTimeout(() => setSaveStatus("idle"), 2000);
-        })
-        .catch(console.error);
-    }
-  }, [debouncedContent, fileContent, currentFile, saveFile]);
+  }, [fileContent, currentFile]);
 
   useEffect(() => {
     return () => {
@@ -78,7 +49,20 @@ export default function CodeEditor({
 
   const handleChange = (value: string | undefined) => {
     setLocalContent(value || "");
-    setSaveStatus("saving");
+  };
+
+  const handleSaveClick = async () => {
+    if (!currentFile) return;
+    try {
+      setSaveStatus("saving");
+      await saveFile(localContent);
+      setSaveStatus("saved");
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setSaveStatus("idle"), 2000);
+    } catch (err) {
+      console.error("Error saving file:", err);
+      setSaveStatus("idle");
+    }
   };
 
   const handleEditorWillMount = (monaco: Monaco) => {
@@ -148,9 +132,8 @@ export default function CodeEditor({
     });
   };
 
-  const handleEditorDidMount = (editor: any, monaco: Monaco) => {
+  const handleEditorDidMount = (editor: any) => {
     editorRef.current = editor;
-    monacoRef.current = monaco;
   };
 
   useEffect(() => {
@@ -284,8 +267,17 @@ export default function CodeEditor({
         >
           <Quote className="h-3.5 w-3.5" />
         </Button>
-        
+
         <div className="ml-auto flex items-center gap-2">
+          <Button
+            size="xs"
+            variant="outline"
+            className="h-6 px-2 text-[10px] uppercase tracking-wide"
+            disabled={!currentFile || saveStatus === "saving"}
+            onClick={handleSaveClick}
+          >
+            {saveStatus === "saving" ? "Saving..." : "Save"}
+          </Button>
           {compileError && (
             <button
               type="button"
@@ -294,11 +286,6 @@ export default function CodeEditor({
             >
               Error
             </button>
-          )}
-          {saveStatus !== "idle" && (
-            <span className="text-[10px] text-muted-foreground/60 italic">
-              {saveStatus === "saving" ? "saving file..." : "file saved"}
-            </span>
           )}
           <div className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider border rounded-full text-muted-foreground">
             {currentFile || "No file"}

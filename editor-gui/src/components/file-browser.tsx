@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { Folder, Plus, FolderPlus, RefreshCw } from "lucide-react";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useEditor } from "@/contexts/editor-context";
@@ -124,6 +124,12 @@ export default function FileBrowser({ onFileSelect, selectedFile }: FileBrowserP
   const disabledFiles = new Set(["main.pdf"]);
   const tree = useMemo(() => buildTree(files), [files]);
 
+  const handleFileSelect = useCallback((path: string) => {
+    if (onFileSelect) {
+      onFileSelect(path);
+    }
+  }, [onFileSelect]);
+
   return (
     <div className="h-full flex flex-col border-r bg-background">
       {/* Header */}
@@ -154,8 +160,7 @@ export default function FileBrowser({ onFileSelect, selectedFile }: FileBrowserP
       <div className="flex-1 overflow-y-auto">
         <FileTree
           selectedPath={selectedFile ?? undefined}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          onSelect={onFileSelect as any}
+          onSelect={handleFileSelect}
           className="border-0 rounded-none"
         >
           {Object.entries(tree.folders).map(([name, node]) => (
