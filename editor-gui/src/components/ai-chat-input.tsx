@@ -94,7 +94,7 @@ export function AIChatInput({
             size="icon-xs"
             variant={inProgress ? "outline" : "default"}
             disabled={sendDisabled}
-            className="h-7 w-7"
+            className="h-7 w-7 rounded-full"
             onClick={handleSend}
             title={inProgress && !hideStopButton ? "Stop" : "Send"}
           >
