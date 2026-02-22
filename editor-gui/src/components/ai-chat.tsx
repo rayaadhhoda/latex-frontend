@@ -11,7 +11,7 @@ interface AIChatProps {
 export default function AIChat({ onInProgress }: AIChatProps) {
 
   return (
-    <div className="flex h-full flex-col bg-background/60 backdrop-blur-sm">
+    <div className="flex h-full flex-col bg-background">
       <div className="flex-1 min-h-0 px-2 py-2">
         <CopilotChat
           className="flex h-full flex-col"
