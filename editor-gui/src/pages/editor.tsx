@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import CodeEditor from "@/components/code-editor";
 import { EditorProvider, useEditor } from "@/contexts/editor-context";
@@ -6,6 +6,11 @@ import TopNavigation from "@/components/top-navigation";
 import FileBrowser from "@/components/file-browser";
 import AIChat from "@/components/ai-chat";
 import PDFView from "@/components/pdf-view";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 import { CopilotKit } from "@copilotkit/react-core";
 
 function EditorContent() {
@@ -42,14 +47,20 @@ function EditorContent() {
             </div>
           )}
 
-          {/* Center Panel */}
-          <div className="flex-1 flex flex-col border-r">
-            {activeTab === "source" ? <CodeEditor /> : <PDFView />}
-          </div>
-
-          {/* Right Sidebar - AI Assistant */}
-          <div className="w-80 shrink-0">
-            <AIChat onComplete={onComplete} />
+          <div className="flex-1 min-w-0 h-full">
+            <ResizablePanelGroup orientation="horizontal" className="h-full">
+              <ResizablePanel minSize="45%">
+                <div className="h-full min-w-0 min-h-0 flex flex-col border-r">
+                  {activeTab === "source" ? <CodeEditor /> : <PDFView />}
+                </div>
+              </ResizablePanel>
+              <ResizableHandle withHandle />
+              <ResizablePanel defaultSize="30%" minSize="20%" maxSize="55%">
+                <div className="h-full min-w-0 min-h-0">
+                  <AIChat onComplete={onComplete} />
+                </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
           </div>
         </div>
       </div>
