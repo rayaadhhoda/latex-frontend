@@ -2,6 +2,10 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import CodeEditor from "@/components/code-editor";
 import { EditorProvider, useEditor } from "@/contexts/editor-context";
+import {
+  ImageForAIChatProvider,
+  useImageForAIChat,
+} from "@/contexts/image-for-ai-chat-context";
 import TopNavigation from "@/components/top-navigation";
 import FileBrowser from "@/components/file-browser";
 import AIChat from "@/components/ai-chat";
@@ -15,17 +19,22 @@ import { CopilotKit } from "@copilotkit/react-core";
 
 function EditorContent() {
   const { currentFile, compileAndRefresh, loadFile, dir } = useEditor();
+  const { uploadedImageData } = useImageForAIChat();
   const [activeTab, setActiveTab] = useState<"preview" | "source">("preview");
 
-  const onComplete = () => {
-    compileAndRefresh();
-  };
+  // TODO: Invoke this when the AI chat is complete
+  // const onComplete = () => {
+  //   compileAndRefresh();
+  // };
 
   return (
     <CopilotKit
       runtimeUrl="http://localhost:8765/copilotkit"
       agent="0"
-      properties={{ folder_path: dir }}
+      properties={{
+        folder_path: dir,
+        attached_image_path: uploadedImageData?.path ?? null,
+      }}
       showDevConsole={false}>
       <div className="flex flex-col h-screen overflow-hidden">
         {/* Top Navigation */}
@@ -57,7 +66,7 @@ function EditorContent() {
               <ResizableHandle withHandle />
               <ResizablePanel defaultSize="30%" minSize="20%" maxSize="55%">
                 <div className="h-full min-w-0 min-h-0">
-                  <AIChat onComplete={onComplete} />
+                  <AIChat />
                 </div>
               </ResizablePanel>
             </ResizablePanelGroup>
@@ -74,7 +83,9 @@ export default function Editor() {
 
   return (
     <EditorProvider dir={dir}>
-      <EditorContent />
+      <ImageForAIChatProvider>
+        <EditorContent />
+      </ImageForAIChatProvider>
     </EditorProvider>
   );
 }

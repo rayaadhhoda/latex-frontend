@@ -92,6 +92,35 @@ export async function getPDF(
   return new Uint8Array(buffer);
 }
 
+export interface UploadImageData {
+  original_filename: string;
+  saved_filename: string;
+  path: string;
+  image_bytes: string;
+}
+
+export async function uploadImage(
+  selectedPath: string,
+  options?: RequestInit,
+): Promise<ApiResponse<UploadImageData>> {
+  return request(API_ENDPOINTS.UPLOAD_IMAGE, {
+    method: "POST",
+    body: JSON.stringify({ selected_path: selectedPath }),
+    ...options,
+  });
+}
+
+export async function removeUploadedImage(
+  uploadedPath: string,
+  options?: RequestInit,
+): Promise<ApiResponse<{ path: string }>> {
+  return request(API_ENDPOINTS.UPLOAD_IMAGE, {
+    method: "DELETE",
+    body: JSON.stringify({ uploaded_path: uploadedPath }),
+    ...options,
+  });
+}
+
 export interface ConfigData {
   openai_api_base?: string;
   openai_api_key?: string;
@@ -128,7 +157,7 @@ export async function getFileContent(
   options?: RequestInit,
 ): Promise<ApiResponse<{ content: string; file: string }>> {
   return request(
-    `${API_ENDPOINTS.FILES}/content?dir=${encodeURIComponent(dir)}&file=${encodeURIComponent(file)}`,
+    `${API_ENDPOINTS.FILES_CONTENT}?dir=${encodeURIComponent(dir)}&file=${encodeURIComponent(file)}`,
     options,
   );
 }
@@ -140,7 +169,7 @@ export async function updateFileContent(
   options?: RequestInit,
 ): Promise<ApiResponse<{ message: string }>> {
   return request(
-    `${API_ENDPOINTS.FILES}/content?dir=${encodeURIComponent(dir)}&file=${encodeURIComponent(file)}`,
+    `${API_ENDPOINTS.FILES_CONTENT}?dir=${encodeURIComponent(dir)}&file=${encodeURIComponent(file)}`,
     {
       method: "PUT",
       body: JSON.stringify({ content }),

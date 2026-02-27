@@ -75,6 +75,15 @@ class UpdateFileContentRequest(BaseModel):
 class ChatRequest(BaseModel):
     dir: str
     prompt: str
+    attached_image_path: str | None = None
+
+
+class UploadImageRequest(BaseModel):
+    selected_path: str
+
+
+class RemoveUploadedImageRequest(BaseModel):
+    uploaded_path: str
 
 
 app = FastAPI(title="LaTeX Chatbot API")
@@ -127,6 +136,48 @@ async def compile_project(request: CompileRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/upload-image")
+async def upload_image(request: UploadImageRequest):
+    try:
+        original_filename, saved_filename, path, image_bytes = project.image.store_uploaded_image(
+            request.selected_path)
+
+        return {
+            "success": True,
+            "data": {
+                "original_filename": original_filename,
+                "saved_filename": saved_filename,
+                "path": path,
+                "image_bytes": image_bytes,
+            },
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/upload-image")
+async def delete_uploaded_image(request: RemoveUploadedImageRequest):
+    try:
+        deleted_path = project.image.remove_uploaded_image(
+            request.uploaded_path)
+        return {
+            "success": True,
+            "data": {
+                "path": deleted_path,
+            },
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/files")
 async def list_files(dir: str = Query(...)):
     try:
@@ -142,9 +193,11 @@ async def get_file_content(dir: str = Query(...), file: str = Query(...)):
     try:
         file_path = Path(dir) / file
         if not file_path.exists():
-            raise HTTPException(status_code=404, detail=f"File not found: {file}")
+            raise HTTPException(status_code=404,
+                                detail=f"File not found: {file}")
         if not file_path.is_file():
-            raise HTTPException(status_code=400, detail=f"Path is not a file: {file}")
+            raise HTTPException(status_code=400,
+                                detail=f"Path is not a file: {file}")
         content = project.read.read_file(file_path)
         return {"success": True, "data": {"content": content, "file": file}}
     except HTTPException:
@@ -229,39 +282,36 @@ async def nuke_config():
 async def chat(request: ChatRequest):
     try:
         folder_path = Path(request.dir)
-        graph = create_graph(folder_path)
+        graph = create_graph(folder_path, request.attached_image_path)
         thread_id = str(uuid.uuid4())
         config = {"configurable": {"thread_id": thread_id}}
         initial_state = {"messages": [HumanMessage(content=request.prompt)]}
         final_state = graph.invoke(initial_state, config=config)
-        
+
         # Extract agent's response messages (AIMessages)
         agent_responses = [
             msg for msg in final_state.get("messages", [])
             if isinstance(msg, AIMessage)
         ]
-        
+
         # Convert AIMessages to serializable format
         response_data = {
-            "messages": [
-                {
-                    "type": msg.__class__.__name__,
-                    "content": msg.content,
-                    "tool_calls": [
-                        {
-                            "name": tc.get("name"),
-                            "args": tc.get("args"),
-                            "id": tc.get("id"),
-                        }
-                        for tc in (msg.tool_calls or [])
-                    ] if hasattr(msg, "tool_calls") and msg.tool_calls else [],
-                }
-                for msg in agent_responses
-            ],
-            "full_state": final_state,
+            "messages": [{
+                "type":
+                msg.__class__.__name__,
+                "content":
+                msg.content,
+                "tool_calls": [{
+                    "name": tc.get("name"),
+                    "args": tc.get("args"),
+                    "id": tc.get("id"),
+                } for tc in (msg.tool_calls or [])]
+                if hasattr(msg, "tool_calls") and msg.tool_calls else [],
+            } for msg in agent_responses],
+            "full_state":
+            final_state,
         }
-        
-        print(response_data)
+
         return {
             "success": True,
             "data": response_data,
@@ -289,8 +339,9 @@ async def copilotkit_handler(request: Request, path: str = ""):
         input_data = RunAgentInput(**inner)
         forwarded_props = input_data.forwarded_props or {}
         folder_path = Path(forwarded_props.get("folder_path", "."))
+        attached_image_path = forwarded_props.get("attached_image_path", None)
 
-        graph = create_graph(folder_path)
+        graph = create_graph(folder_path, attached_image_path)
         agent = SafeLangGraphAGUIAgent(name="0", graph=graph)
 
         accept_header = request.headers.get("accept")

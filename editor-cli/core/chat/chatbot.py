@@ -12,6 +12,10 @@ from core.compiler import compile_project
 
 from core.project.read import read_file, list_files
 from core.project.edit import edit_file
+from core.project.image import (
+    get_uploaded_image_bytes_b64,
+    move_uploaded_image_to_project,
+)
 from core import settings
 
 SYSTEM_PROMPT = dedent(
@@ -21,6 +25,8 @@ SYSTEM_PROMPT = dedent(
         2. Read the contents of any file
         3. Edit/write the contents of any file
         4. Compile the LaTeX project
+        5. Read the currently attached image and return bytes as base64 ASCII
+        6. Move the currently attached image into the project's figures directory
 
         # Workflow
         When a user asks you to modify LaTeX files, you should:
@@ -33,11 +39,15 @@ SYSTEM_PROMPT = dedent(
         - However, do not attempt to compile or fix compilation errors more than three times within a single user request.
         - Always be careful to preserve LaTeX syntax and formatting.
         - When editing files, provide the complete file content, not just the changed sections.
-        
+
+        # Figure Handling
+        - If the user asks you to add a figure, you should use the move_attached_image_to_project tool to move it to the project's figures directory, then cite it in the right location.
+        - If the user instead asks a question about the figure, you should use the read_attached_image_tool to read the image and then answer the question based on the image.
+
         # Integrity Checks
         You must always aim to make minimal changes to the project. Do not add content that is not provided by the user.
         All content will be provided by the user. Even if asked to generate text, insist that the user provides the content.
-        
+
         # Directory structure
         The given folder is the root of the LaTeX project.
         - The project should have a main.tex file.
@@ -64,13 +74,12 @@ SYSTEM_PROMPT = dedent(
           If there are subsections, each subsection should be in a separate file.
           For example, for section "1.1 Introduction", the file should be called `1_1_introduction.tex`.
           Then, `1_1_introduction.tex` is imported in main.tex using \\input{sections/1_1_introduction}.
-        
 
         If you understand, reply with "Let's get started!"
         """).strip()
 
 
-def create_tools(folder_path: Path):
+def create_tools(folder_path: Path, attached_image_path: str | None):
     """Create tools bound to a specific folder path."""
 
     @tool
@@ -128,11 +137,36 @@ def create_tools(folder_path: Path):
         print(result.stderr)
         return f"FAILED: {result.stderr}"
 
+    # TODO: Try attaching this tool back in.
+    @tool
+    def read_attached_image_tool() -> str:
+        """Read the currently attached image and return bytes as base64 ASCII."""
+        if not attached_image_path:
+            return "Error: No image is currently attached."
+        try:
+            return get_uploaded_image_bytes_b64(attached_image_path)
+        except Exception as e:
+            return f"Error reading attached image: {str(e)}"
+
+    @tool
+    def move_attached_image_to_project_tool() -> str:
+        """Move the currently attached image into the project's figures directory."""
+        if not attached_image_path:
+            return "Error: No image is currently attached."
+        try:
+            moved_relative_path = move_uploaded_image_to_project(
+                attached_image_path, folder_path)
+            return f"Moved attached image to '{moved_relative_path}'."
+        except Exception as e:
+            return f"Error moving attached image into project: {str(e)}"
+
     return [
         read_file_tool,
         edit_file_tool,
         list_files_tool,
         compile_latex_tool,
+        # read_attached_image_tool,
+        move_attached_image_to_project_tool,
     ]
 
 
@@ -156,10 +190,11 @@ def create_model():
     )
 
 
-def create_graph(folder_path: Path) -> CompiledStateGraph:
+def create_graph(folder_path: Path,
+                 attached_image_path: str | None) -> CompiledStateGraph:
     """Create and return a configured LangGraph agent."""
     model = create_model()
-    tools = create_tools(folder_path)
+    tools = create_tools(folder_path, attached_image_path)
     model_with_tools = model.bind_tools(tools)
 
     def call_model(state: CopilotKitState):

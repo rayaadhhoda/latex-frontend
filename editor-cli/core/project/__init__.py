@@ -1,3 +1,3 @@
-from . import create, read, edit
+from . import create, read, edit, image
 
-__all__ = ["create", "read", "edit"]
+__all__ = ["create", "read", "edit", "image"]

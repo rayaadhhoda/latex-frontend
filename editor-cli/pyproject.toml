@@ -9,6 +9,7 @@ dependencies = [
     "tomlkit>=0.13.3",
     "genai_prices",
     "fastapi>=0.115.0",
+    "python-multipart>=0.0.20",
     "uvicorn>=0.34.0",
     "copilotkit>=0.1.77",
     "langgraph>=0.2.0",
