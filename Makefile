@@ -25,3 +25,6 @@ build:
 
 do-benchmark:
 	@cd benchmark && uv run benchmark --dir temp run $(filter-out $@,$(MAKECMDGOALS))
+
+dashboard:
+	@cd benchmark && uv run dashboard --dir temp

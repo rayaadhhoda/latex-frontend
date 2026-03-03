@@ -137,16 +137,40 @@ def create_tools(folder_path: Path, attached_image_path: str | None):
         print(result.stderr)
         return f"FAILED: {result.stderr}"
 
-    # TODO: Try attaching this tool back in.
     @tool
-    def read_attached_image_tool() -> str:
-        """Read the currently attached image and return bytes as base64 ASCII."""
+    def read_attached_image_tool():
+        """Read the currently attached image and return an image-part style message."""
         if not attached_image_path:
-            return "Error: No image is currently attached."
+            return [{
+                "type": "text",
+                "text": "Error: No image is currently attached."
+            }]
+
         try:
-            return get_uploaded_image_bytes_b64(attached_image_path)
+            image_b64 = get_uploaded_image_bytes_b64(attached_image_path)
         except Exception as e:
-            return f"Error reading attached image: {str(e)}"
+            return [{
+                "type": "text",
+                "text": f"Error reading attached image: {str(e)}",
+            }]
+
+        suffix = Path(attached_image_path).suffix.lower()
+        media_type = {
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".gif": "image/gif",
+            ".webp": "image/webp",
+        }.get(suffix, "image/png")
+
+        return [{
+            "type": "image",
+            "source": {
+                "type": "base64",
+                "media_type": media_type,
+                "data": image_b64,
+            },
+        }]
 
     @tool
     def move_attached_image_to_project_tool() -> str:
@@ -165,7 +189,7 @@ def create_tools(folder_path: Path, attached_image_path: str | None):
         edit_file_tool,
         list_files_tool,
         compile_latex_tool,
-        # read_attached_image_tool,
+        read_attached_image_tool,
         move_attached_image_to_project_tool,
     ]
 

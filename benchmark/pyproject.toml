@@ -11,10 +11,12 @@ requires-python = ">=3.14"
 dependencies = [
     "click>=8.3.1",
     "requests>=2.32.5",
+    "streamlit>=1.54.0",
 ]
 
 [project.scripts]
 benchmark = "core:cli.main"
+dashboard = "core.dashboard:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["core"]

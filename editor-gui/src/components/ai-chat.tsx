@@ -6,6 +6,7 @@ import useRenderListFilesTool from "./tool-calls/list-files-tool";
 import useRenderEditFileTool from "./tool-calls/edit-file-tool";
 import useRenderCompileProjectTool from "./tool-calls/compile-project-tool";
 import useRenderMoveAttachedImageToProjectTool from "./tool-calls/move-attached-image-to-project-tool";
+import useRenderReadAttachedImageTool from "./tool-calls/read-attached-image-tool";
 
 export default function AIChat() {
   const { uploadedImageData, handleAddImage, handleRemoveImage } = useImageForAIChat();
@@ -15,6 +16,7 @@ export default function AIChat() {
   useRenderEditFileTool();
   useRenderCompileProjectTool();
   useRenderMoveAttachedImageToProjectTool();
+  useRenderReadAttachedImageTool();
 
   return (
     <div className="flex h-full flex-col bg-background">
