@@ -14,6 +14,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
+from platformdirs import user_documents_dir
+
 from core import __version__, compiler
 from core import project
 from core import settings
@@ -92,6 +94,21 @@ app = FastAPI(title="LaTeX Chatbot API")
 @app.get("/health")
 async def health():
     return {"status": "ok", "version": __version__}
+
+
+@app.get("/templates")
+async def get_templates():
+    try:
+        manifest = project.create.load_manifest()
+        return {
+            "success": True,
+            "data": {
+                **manifest,
+                "default_documents_dir": user_documents_dir()
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/init")

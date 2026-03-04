@@ -1,4 +1,4 @@
-import { Settings, X, Type, Hash } from "lucide-react";
+import { Settings, X, Type, Hash, Home } from "lucide-react";
 import { useSettings } from "@/contexts/settings-context";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useNavigate } from "react-router-dom";
 
 interface SettingsMenuProps {
   onClose: () => void;
@@ -21,6 +22,7 @@ export default function SettingsMenu({ onClose }: SettingsMenuProps) {
     showLineNumbers,
     toggleLineNumbers,
   } = useSettings();
+  const navigate = useNavigate();
 
   const handleFontSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value, 10);
@@ -109,6 +111,18 @@ export default function SettingsMenu({ onClose }: SettingsMenuProps) {
               }`}
             />
           </button>
+        </div>
+
+        {/* Go to Home */}
+        <div className="border-t pt-4">
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-2 text-sm"
+            onClick={() => { onClose(); navigate("/"); }}
+          >
+            <Home className="h-4 w-4" />
+            Go to Home
+          </Button>
         </div>
       </CardContent>
     </Card>

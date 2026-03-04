@@ -3,44 +3,20 @@ import { useNavigate } from "react-router-dom";
 import { open } from "@tauri-apps/plugin-dialog";
 import { GraduationCap, Plus, Clock, Folder, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { initProject } from "@/api/client";
+import { Card, CardContent } from "@/components/ui/card";
 import { getFileContent } from "@/api/client";
-
-interface RecentProject {
-  path: string;
-  name: string;
-  lastAccessed: number;
-}
+import { loadRecentProjects, saveRecentProject as persistRecentProject, type RecentProject } from "@/lib/recent-projects";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
-  const [isCreating, setIsCreating] = useState(false);
 
-  // Load recent projects from localStorage
   useEffect(() => {
-    const stored = localStorage.getItem("recentProjects");
-    if (stored) {
-      try {
-        const projects = JSON.parse(stored) as RecentProject[];
-        // Sort by last accessed, most recent first
-        const sorted = projects.sort((a, b) => b.lastAccessed - a.lastAccessed);
-        setRecentProjects(sorted.slice(0, 10)); // Keep only 10 most recent
-      } catch (e) {
-        console.error("Failed to load recent projects:", e);
-      }
-    }
+    setRecentProjects(loadRecentProjects());
   }, []);
 
   const saveRecentProject = (path: string, name: string) => {
-    const projects = recentProjects.filter((p) => p.path !== path);
-    const updated = [
-      { path, name, lastAccessed: Date.now() },
-      ...projects,
-    ].slice(0, 10);
-    setRecentProjects(updated);
-    localStorage.setItem("recentProjects", JSON.stringify(updated));
+    setRecentProjects(persistRecentProject(path, name));
   };
 
   const getProjectName = async (path: string): Promise<string> => {
@@ -78,32 +54,8 @@ export default function Dashboard() {
     return new Date(timestamp).toLocaleDateString();
   };
 
-  const handleNewProject = async () => {
-    setIsCreating(true);
-    try {
-      const selected = await open({
-        directory: true,
-        multiple: false,
-        title: "Select or Create Project Directory",
-      });
-
-      if (selected) {
-        const path = selected as string;
-        try {
-          await initProject(path, "default");
-          const name = await getProjectName(path);
-          saveRecentProject(path, name);
-          navigate(`/editor?dir=${encodeURIComponent(path)}`);
-        } catch (error) {
-          console.error("Failed to create project:", error);
-          alert("Failed to create project. Please try again.");
-        }
-      }
-    } catch (error) {
-      console.error("Failed to select directory:", error);
-    } finally {
-      setIsCreating(false);
-    }
+  const handleNewProject = () => {
+    navigate("/new-project");
   };
 
   const handleImportDirectory = async () => {
@@ -142,9 +94,9 @@ export default function Dashboard() {
             </div>
             <p className="text-muted-foreground">Manage your theses and course reports</p>
           </div>
-          <Button onClick={handleNewProject} disabled={isCreating} className="gap-2">
+          <Button onClick={handleNewProject} className="gap-2">
             <Plus className="h-4 w-4" />
-            {isCreating ? "Creating..." : "New Project"}
+            New Project
           </Button>
         </div>
 

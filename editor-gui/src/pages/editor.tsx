@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import CodeEditor from "@/components/code-editor";
 import { EditorProvider, useEditor } from "@/contexts/editor-context";
 import {
@@ -37,12 +38,7 @@ function EditorContent() {
       }}
       showDevConsole={false}>
       <div className="flex flex-col h-screen overflow-hidden">
-        {/* Top Navigation */}
-        <TopNavigation
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          onCompile={compileAndRefresh}
-        />
+        <TopNavigation activeTab={activeTab} onTabChange={setActiveTab} onCompile={compileAndRefresh} canCompile={!!dir} />
 
         {/* Main Content Area */}
         <div className="flex flex-1 overflow-hidden">

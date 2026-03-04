@@ -31,6 +31,18 @@ export async function health(
   return request(API_ENDPOINTS.HEALTH, options);
 }
 
+export interface TemplateInfo {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export async function getTemplates(
+  options?: RequestInit,
+): Promise<ApiResponse<{ templates: TemplateInfo[]; default_documents_dir: string }>> {
+  return request(API_ENDPOINTS.TEMPLATES, options);
+}
+
 export async function initProject(
   dir: string,
   template: string = "default",

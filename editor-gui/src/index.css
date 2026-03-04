@@ -186,6 +186,12 @@
   }
 }
 
+/* CopilotKit feather gradient uses a hardcoded dark color that doesn't match our background */
+.dark .bg-gradient-to-t {
+  --tw-gradient-from: var(--background) !important;
+  --tw-gradient-via: var(--background) !important;
+}
+
 /* CopilotKit chat layout tweaks */
 .copilotKitMessages {
   flex: 1;

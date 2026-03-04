@@ -77,15 +77,21 @@ export function EditorProvider({ dir, children }: EditorProviderProps) {
           setCompileError(response.detail || "Failed to compile PDF");
         }
       } else {
-        if (stderr) {
-          setCompileError(stderr);
+        const ignoredPrefixes = ["warning:", "Invalid UTF-8 byte or sequence"];
+        const filteredStderr = stderr
+          ?.split("\n")
+          .filter((line) => !ignoredPrefixes.some((prefix) => line.startsWith(prefix)))
+          .join("\n")
+          .trim();
+        if (filteredStderr) {
+          setCompileError(filteredStderr);
         } else {
           setCompileError(null);
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to compile PDF");
-      setCompileError(err instanceof Error ? err.message : "Failed to compile PDF");
+      setError(err instanceof Error ? err.message : "error: Failed to compile PDF");
+      setCompileError(err instanceof Error ? err.message : "error: Failed to compile PDF");
     }
   }, [dir]);
 

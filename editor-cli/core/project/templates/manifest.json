@@ -1,0 +1,29 @@
+{
+  "templates": [
+    {
+      "id": "minimal",
+      "name": "Minimal",
+      "description": "No styling applied"
+    },
+    {
+      "id": "resume",
+      "name": "Resume / CV",
+      "description": "ATS-friendly template"
+    },
+    {
+      "id": "report",
+      "name": "Project report",
+      "description": "Organized large document with sections and subsections"
+    },
+    {
+      "id": "ieee-one",
+      "name": "IEEE one-column",
+      "description": "IEEE one-column template"
+    },
+    {
+      "id": "ieee-two",
+      "name": "IEEE two-column",
+      "description": "IEEE two-column template"
+    }
+  ]
+}

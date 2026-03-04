@@ -1,7 +1,31 @@
 from pathlib import Path
 import importlib.resources
-from typing import Dict
+import json
+from typing import Dict, Any
 import sys
+
+
+def load_manifest() -> Dict[str, Any]:
+    try:
+        manifest_path = importlib.resources.files(
+            "core.project.templates") / "manifest.json"
+
+        if not manifest_path.exists():
+            raise FileNotFoundError("manifest.json not found")
+
+        return json.loads(manifest_path.read_text(encoding='utf-8'))
+    except (AttributeError, ModuleNotFoundError, TypeError) as e:
+        if getattr(sys, 'frozen', False):
+            base_path = Path(sys._MEIPASS)
+            manifest_path = base_path / "core" / "project" / "templates" / "manifest.json"
+        else:
+            base_path = Path(__file__).parent
+            manifest_path = base_path / "templates" / "manifest.json"
+
+        if not manifest_path.exists():
+            raise FileNotFoundError("manifest.json not found") from e
+
+        return json.loads(manifest_path.read_text(encoding='utf-8'))
 
 
 def load_template(template: str) -> Dict[str, str]:
