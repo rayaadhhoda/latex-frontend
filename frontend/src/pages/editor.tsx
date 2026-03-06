@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
 import CodeEditor from "@/components/code-editor";
 import { EditorProvider, useEditor } from "@/contexts/editor-context";
 import {
@@ -24,7 +23,7 @@ function EditorContent() {
   const { uploadedImageData } = useImageForAIChat();
   const [activeTab, setActiveTab] = useState<"preview" | "source">("preview");
 
-  // TODO: Invoke this when the AI chat is complete
+  // FIXME: Invoke this when the AI chat is complete
   // const onComplete = () => {
   //   compileAndRefresh();
   // };
