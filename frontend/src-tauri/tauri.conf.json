@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "AI Document Builder",
+  "productName": "Spartan Write",
   "version": "0.1.0",
-  "identifier": "dev.vivekraman.latexchatbot.gui",
+  "identifier": "dev.vivekraman.spartanwrite",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "AI Document Builder",
+        "title": "Spartan Write",
         "width": 1280,
         "height": 800,
         "decorations": true
@@ -33,7 +33,7 @@
       "icons/icon.ico"
     ],
     "externalBin": [
-      "bin/latex-chatbot-cli",
+      "bin/spartan-write-sidecar",
       "bin/tectonic"
     ]
   }

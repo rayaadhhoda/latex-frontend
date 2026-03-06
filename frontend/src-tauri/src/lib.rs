@@ -15,7 +15,7 @@ pub fn run() {
         .manage(ServerState(Mutex::new(None)))
         .setup(|app| {
             // Launch the sidecar server on startup
-            let sidecar = app.shell().sidecar("latex-chatbot-cli")
+            let sidecar = app.shell().sidecar("spartan-write-sidecar")
                 .expect("Failed to create sidecar command");
             
             let (mut rx, child) = sidecar.spawn().expect("Failed to spawn sidecar");
@@ -28,13 +28,13 @@ pub fn run() {
                     let ts = Local::now().format("%H:%M:%S");
                     match event {
                         CommandEvent::Stdout(line) => {
-                            println!("[{} sidecar stdout] {}", ts, String::from_utf8_lossy(&line));
+                            print!("[{} sidecar stdout] {}", ts, String::from_utf8_lossy(&line));
                         }
                         CommandEvent::Stderr(line) => {
-                            eprintln!("[{} sidecar stderr] {}", ts, String::from_utf8_lossy(&line));
+                            eprint!("[{} sidecar stderr] {}", ts, String::from_utf8_lossy(&line));
                         }
                         CommandEvent::Terminated(payload) => {
-                            println!("[{} sidecar] terminated with code: {:?}", ts, payload.code);
+                            print!("[{} sidecar] terminated with code: {:?}", ts, payload.code);
                         }
                         _ => {}
                     }
@@ -45,7 +45,7 @@ pub fn run() {
             let state = app.state::<ServerState>();
             *state.0.lock().unwrap() = Some(child);
 
-            println!("Server started on http://127.0.0.1:8765");
+            println!("Server started on http://127.0.0.1:8768");
             Ok(())
         })
         .build(tauri::generate_context!())

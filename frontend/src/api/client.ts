@@ -1,4 +1,4 @@
-import { API_BASE_URL, API_ENDPOINTS } from "./constants";
+import { SIDECAR_API_BASE_URL, API_ENDPOINTS } from "./constants";
 
 interface ApiResponse<T = unknown> {
   success: boolean;
@@ -6,16 +6,23 @@ interface ApiResponse<T = unknown> {
   detail?: string;
 }
 
-async function request<T>(
+async function apiFetch(
   endpoint: string,
-  options?: RequestInit
-): Promise<ApiResponse<T>> {
-  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+  options?: RequestInit,
+): Promise<Response> {
+  return fetch(`${SIDECAR_API_BASE_URL}${endpoint}`, {
     headers: {
       "Content-Type": "application/json",
     },
     ...options,
   });
+}
+
+async function request<T>(
+  endpoint: string,
+  options?: RequestInit
+): Promise<ApiResponse<T>> {
+  const res = await apiFetch(endpoint, options);
 
   if (!res.ok) {
     const error = await res.json();
@@ -87,8 +94,8 @@ export async function getPDF(
   dir: string,
   options?: RequestInit,
 ): Promise<Uint8Array> {
-  const res = await fetch(
-    `${API_BASE_URL}${API_ENDPOINTS.PDF}?dir=${encodeURIComponent(dir)}`,
+  const res = await apiFetch(
+    `${API_ENDPOINTS.PDF}?dir=${encodeURIComponent(dir)}`,
     options,
   );
 

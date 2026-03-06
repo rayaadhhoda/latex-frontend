@@ -1,7 +1,10 @@
 {
 	"folders": [
 		{
-			"path": "editor-cli"
+			"path": "sidecar"
+		},
+		{
+			"path": "server"
 		},
 		{
 			"path": "benchmark"

@@ -17,6 +17,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { CopilotKit } from "@copilotkit/react-core";
+import { SERVER_API_BASE_URL } from "@/api/constants";
 
 function EditorContent() {
   const { currentFile, compileAndRefresh, loadFile, dir } = useEditor();
@@ -30,7 +31,7 @@ function EditorContent() {
 
   return (
     <CopilotKit
-      runtimeUrl="http://localhost:8765/copilotkit"
+      runtimeUrl={`${SERVER_API_BASE_URL}/copilotkit`}
       agent="0"
       properties={{
         folder_path: dir,

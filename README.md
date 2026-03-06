@@ -6,8 +6,9 @@ A powerful, AI-assisted LaTeX editor featuring a local FastAPI backend, a Tauri 
 
 The project consists of three main components:
 
-- **`editor-cli`**: A Python-based FastAPI server. See [Backend Documentation](wiki/Backend.md).
-- **`editor-gui`**: A Tauri + React frontend. See [Frontend Documentation](wiki/Frontend.md).
+- **`server`**: A Python-based FastAPI server running in the cloud. See [Sidecar Documentation](wiki/Sidecar.md).
+- **`sidecar`**: A Python-based FastAPI server running alongside the frontend. See [Sidecar Documentation](wiki/Sidecar.md).
+- **`frontend`**: A Tauri + React frontend. See [Frontend Documentation](wiki/Frontend.md).
 - **`benchmark`**: A CLI tool for evaluation. See [Benchmark Documentation](wiki/Benchmark.md).
 
 ## Prerequisites
@@ -25,7 +26,7 @@ The project consists of three main components:
     ```
 
 2.  **Run Development Environment**:
-    Starts both the backend server and the frontend GUI in development mode.
+    Starts the server, sidecar, and the frontend in development mode.
     ```bash
     make dev
     ```
@@ -42,17 +43,6 @@ To build the project:
 ```bash
 make build
 ```
-
-## Usage
-
-| Command | Description |
-|---------|-------------|
-| `make init` | Install Python and Node.js dependencies. |
-| `make dev` | Run the full stack in development mode. |
-| `make server` | Run only the FastAPI server. |
-| `make gui` | Run only the Tauri frontend. |
-| `make build` | Build the production application. |
-| `make do-benchmark` | Run the benchmark suite. |
 
 ## License
 

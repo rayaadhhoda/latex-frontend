@@ -22,9 +22,9 @@ from pathlib import Path
 
 # Paths
 ROOT = Path(__file__).parent
-CLI_DIR = ROOT / "editor-cli"
-GUI_DIR = ROOT / "editor-gui"
-SIDECAR_DIR = GUI_DIR / "src-tauri" / "bin"
+SIDECAR_DIR = ROOT / "sidecar"
+FRONTEND_DIR = ROOT / "frontend"
+SIDECAR_BIN_DIR = FRONTEND_DIR / "src-tauri" / "bin"
 
 # Tectonic binary download
 TECTONIC_VERSION = "0.15.0+20251006"
@@ -54,7 +54,7 @@ def get_target_triple() -> str:
 
 def get_sidecar_name(target_triple: str) -> str:
     """Return the sidecar filename with target triple."""
-    base = f"latex-chatbot-cli-{target_triple}"
+    base = f"spartan-write-sidecar-{target_triple}"
     if "windows" in target_triple:
         return f"{base}.exe"
     return base
@@ -97,7 +97,7 @@ def download_tectonic(target_triple: str) -> Path:
     asset_name = get_tectonic_asset_name(target_triple)
     url = f"{TECTONIC_RELEASE_URL}/{asset_name}"
     sidecar_name = get_tectonic_sidecar_name(target_triple)
-    dest = SIDECAR_DIR / sidecar_name
+    dest = SIDECAR_BIN_DIR / sidecar_name
 
     print(f"+ Downloading: {url}")
 
@@ -127,7 +127,7 @@ def download_tectonic(target_triple: str) -> Path:
             raise FileNotFoundError(
                 f"Binary not found in archive: {binary_path}")
 
-        SIDECAR_DIR.mkdir(parents=True, exist_ok=True)
+        SIDECAR_BIN_DIR.mkdir(parents=True, exist_ok=True)
         shutil.copy2(binary_path, dest)
         print(f"+ Copied to: {dest}")
 
@@ -145,9 +145,9 @@ def run(cmd: list[str],
 def build_wheel() -> Path:
     """Build the CLI wheel and return path to the .whl file."""
     print("\n=== Building CLI wheel ===")
-    run(["uv", "build"], cwd=CLI_DIR)
+    run(["uv", "build"], cwd=SIDECAR_DIR)
 
-    dist_dir = CLI_DIR / "dist"
+    dist_dir = SIDECAR_DIR / "dist"
     wheels = list(dist_dir.glob("*.whl"))
     if not wheels:
         raise FileNotFoundError(f"No .whl file found in {dist_dir}")
@@ -166,8 +166,8 @@ def build_pyinstaller(target_triple: str) -> Path:
     exe_name = sidecar_name.removesuffix(".exe")
 
     # PyInstaller output directories
-    build_dir = CLI_DIR / "build"
-    dist_dir = CLI_DIR / "pyinstaller_dist"
+    build_dir = SIDECAR_DIR / "build"
+    dist_dir = SIDECAR_DIR / "pyinstaller_dist"
 
     # Clean previous PyInstaller output
     if build_dir.exists():
@@ -181,6 +181,8 @@ def build_pyinstaller(target_triple: str) -> Path:
     cmd = [
         "uv",
         "run",
+        "--group",
+        "dev",
         "pyinstaller",
         "--onefile",
         "--name",
@@ -193,14 +195,14 @@ def build_pyinstaller(target_triple: str) -> Path:
         str(build_dir),
         # Include template files for project creation
         "--add-data",
-        f"{CLI_DIR / 'core' / 'project' / 'templates'}:core/project/templates",
+        f"{SIDECAR_DIR / 'core' / 'project' / 'templates'}:core/project/templates",
     ]
     for module in copy_metadata:
         cmd.extend(["--copy-metadata", module])
     cmd.append("api/server.py")
 
     # Run PyInstaller via uv to use the dev dependency
-    run(cmd, cwd=CLI_DIR)
+    run(cmd, cwd=SIDECAR_DIR)
 
     # Find the built executable
     exe_path = dist_dir / sidecar_name
@@ -215,10 +217,10 @@ def copy_sidecar(exe_path: Path, target_triple: str) -> Path:
     """Copy the executable to the Tauri sidecar directory."""
     print("\n=== Copying sidecar to Tauri ===")
 
-    SIDECAR_DIR.mkdir(parents=True, exist_ok=True)
+    SIDECAR_BIN_DIR.mkdir(parents=True, exist_ok=True)
 
     sidecar_name = get_sidecar_name(target_triple)
-    dest = SIDECAR_DIR / sidecar_name
+    dest = SIDECAR_BIN_DIR / sidecar_name
 
     shutil.copy2(exe_path, dest)
     print(f"+ Copied to: {dest}")
@@ -228,7 +230,7 @@ def copy_sidecar(exe_path: Path, target_triple: str) -> Path:
 def build_tauri():
     """Run tauri build to create the final app bundle."""
     print("\n=== Building Tauri app ===")
-    run(["npm", "run", "tauri", "build"], cwd=GUI_DIR)
+    run(["npm", "run", "tauri", "build"], cwd=FRONTEND_DIR)
 
 
 def main():
@@ -238,7 +240,8 @@ def main():
     print(f"+ Target triple: {target_triple}")
 
     # Download tectonic if --link-only is absent OR binary is missing
-    tectonic_sidecar = SIDECAR_DIR / get_tectonic_sidecar_name(target_triple)
+    tectonic_sidecar = SIDECAR_BIN_DIR / get_tectonic_sidecar_name(
+        target_triple)
     if "--link-only" not in sys.argv or not tectonic_sidecar.exists():
         download_tectonic(target_triple)
 

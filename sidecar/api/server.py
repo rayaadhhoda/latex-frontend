@@ -1,17 +1,12 @@
 import os
-import uuid
 from pathlib import Path
 import sys
 import threading
 import time
 
-from ag_ui.core.types import RunAgentInput
-from langchain_core.messages import HumanMessage, AIMessage
-from ag_ui.encoder import EventEncoder
-from copilotkit import LangGraphAGUIAgent
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response, StreamingResponse
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from platformdirs import user_documents_dir
@@ -19,16 +14,6 @@ from platformdirs import user_documents_dir
 from core import __version__, compiler
 from core import project
 from core import settings
-from core.chat.chatbot import create_graph
-
-
-class SafeLangGraphAGUIAgent(LangGraphAGUIAgent):
-    """LangGraphAGUIAgent that tolerates None in messages_in_process (ag_ui_langgraph bug)."""
-
-    def set_message_in_progress(self, run_id: str, data):
-        current = self.messages_in_process.get(run_id) or {}
-        self.messages_in_process[run_id] = {**(current or {}), **(data or {})}
-
 
 if getattr(sys, "frozen", False):
     os.environ.setdefault("PYDANTIC_DISABLE_PLUGINS", "1")
@@ -74,12 +59,6 @@ class UpdateFileContentRequest(BaseModel):
     content: str
 
 
-class ChatRequest(BaseModel):
-    dir: str
-    prompt: str
-    attached_image_path: str | None = None
-
-
 class UploadImageRequest(BaseModel):
     selected_path: str
 
@@ -88,7 +67,7 @@ class RemoveUploadedImageRequest(BaseModel):
     uploaded_path: str
 
 
-app = FastAPI(title="LaTeX Chatbot API")
+app = FastAPI(title="Spartain Write - Sidecar")
 
 
 @app.get("/health")
@@ -103,8 +82,7 @@ async def get_templates():
         return {
             "success": True,
             "data": {
-                **manifest,
-                "default_documents_dir": user_documents_dir()
+                **manifest, "default_documents_dir": user_documents_dir()
             }
         }
     except Exception as e:
@@ -295,95 +273,6 @@ async def nuke_config():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/chat")
-async def chat(request: ChatRequest):
-    try:
-        folder_path = Path(request.dir)
-        graph = create_graph(folder_path, request.attached_image_path)
-        thread_id = str(uuid.uuid4())
-        config = {"configurable": {"thread_id": thread_id}}
-        initial_state = {"messages": [HumanMessage(content=request.prompt)]}
-        final_state = graph.invoke(initial_state, config=config)
-
-        # Extract agent's response messages (AIMessages)
-        agent_responses = [
-            msg for msg in final_state.get("messages", [])
-            if isinstance(msg, AIMessage)
-        ]
-
-        # Convert AIMessages to serializable format
-        response_data = {
-            "messages": [{
-                "type":
-                msg.__class__.__name__,
-                "content":
-                msg.content,
-                "tool_calls": [{
-                    "name": tc.get("name"),
-                    "args": tc.get("args"),
-                    "id": tc.get("id"),
-                } for tc in (msg.tool_calls or [])]
-                if hasattr(msg, "tool_calls") and msg.tool_calls else [],
-            } for msg in agent_responses],
-            "full_state":
-            final_state,
-        }
-
-        return {
-            "success": True,
-            "data": response_data,
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/copilotkit")
-@app.post("/copilotkit/")
-@app.post("/copilotkit/{path:path}")
-async def copilotkit_handler(request: Request, path: str = ""):
-    """Handle both CopilotKit info/discovery and AG-UI agent execution."""
-    try:
-        body = await request.json()
-    except Exception:
-        body = {}
-
-    method = body.get("method", "")
-    inner = body.get("body", {}) or {}
-
-    # AG-UI execution requests are routed via the "method" envelope
-    if method and method != "info":
-        # The actual AG-UI payload is nested inside "body"
-        input_data = RunAgentInput(**inner)
-        forwarded_props = input_data.forwarded_props or {}
-        folder_path = Path(forwarded_props.get("folder_path", "."))
-        attached_image_path = forwarded_props.get("attached_image_path", None)
-
-        graph = create_graph(folder_path, attached_image_path)
-        agent = SafeLangGraphAGUIAgent(name="0", graph=graph)
-
-        accept_header = request.headers.get("accept")
-        encoder = EventEncoder(accept=accept_header)
-
-        async def event_generator():
-            async for event in agent.run(input_data):
-                yield encoder.encode(event)
-
-        return StreamingResponse(event_generator(),
-                                 media_type=encoder.get_content_type())
-
-    # Info / discovery request
-    return JSONResponse({
-        "agents": [{
-            "name": "0",
-            "description":
-            "A LaTeX chatbot that can read, write, and modify LaTeX files.",
-            "type": "langgraph",
-        }],
-        "actions": [],
-        "sdkVersion": __version__,
-    })
-
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -392,9 +281,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 def main():
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8765)
+    uvicorn.run(app, host="127.0.0.1", port=8768)
 
 
 if __name__ == "__main__":

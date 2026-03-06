@@ -397,7 +397,7 @@ wheels = [
 ]
 
 [[package]]
-name = "latex-chatbot-cli"
+name = "latex-chatbot-sidecar"
 version = "1.0.0"
 source = { editable = "." }
 dependencies = [

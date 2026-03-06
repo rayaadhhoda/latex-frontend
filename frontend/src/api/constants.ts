@@ -2,7 +2,8 @@
  * API Configuration Constants
  */
 
-export const API_BASE_URL = "http://127.0.0.1:8765";
+export const SERVER_API_BASE_URL = "http://127.0.0.1:8767";
+export const SIDECAR_API_BASE_URL = "http://127.0.0.1:8768";
 
 export const API_ENDPOINTS = {
   HEALTH: "/health",
