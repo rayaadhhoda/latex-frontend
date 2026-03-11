@@ -15,7 +15,8 @@ def _resolve_uploaded_image_path(uploaded_path: str) -> Path:
     if not uploaded_path:
         raise ValueError("Missing uploaded image path")
 
-    runtime_dir = user_runtime_path(appname="latex-chatbot", ensure_exists=True).resolve()
+    runtime_dir = user_runtime_path(appname="spartan-write",
+                                    ensure_exists=True).resolve()
     image_path = Path(uploaded_path).resolve()
     if runtime_dir != image_path.parent:
         raise ValueError("Invalid uploaded image path")
@@ -36,7 +37,7 @@ def store_uploaded_image(selected_path: str) -> tuple[str, str, str, str]:
     if not source.exists() or not source.is_file():
         raise ValueError(f"Invalid image path: {selected_path}")
 
-    temp_dir = user_runtime_path(appname="latex-chatbot", ensure_exists=True)
+    temp_dir = user_runtime_path(appname="spartan-write", ensure_exists=True)
     original_filename = source.name
     file_path = temp_dir / f"{uuid.uuid4().hex}-{original_filename}"
 

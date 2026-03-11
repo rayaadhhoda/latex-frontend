@@ -2,6 +2,7 @@ use std::sync::Mutex;
 use tauri::Manager;
 use tauri_plugin_shell::process::CommandChild;
 use tauri_plugin_shell::ShellExt;
+use tauri_plugin_log::{Target, TargetKind};
 
 // Global state to hold the server process
 struct ServerState(Mutex<Option<CommandChild>>);
@@ -16,6 +17,14 @@ pub fn run() {
     }
 
     builder
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .targets([
+                    Target::new(TargetKind::Stdout),
+                    Target::new(TargetKind::Webview),
+                ])
+                .build(),
+        )
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
@@ -38,13 +47,13 @@ pub fn run() {
                     let ts = Local::now().format("%H:%M:%S");
                     match event {
                         CommandEvent::Stdout(line) => {
-                            print!("[{} sidecar stdout] {}", ts, String::from_utf8_lossy(&line));
+                            log::info!("[{} sidecar stdout] {}", ts, String::from_utf8_lossy(&line).trim_end());
                         }
                         CommandEvent::Stderr(line) => {
-                            eprint!("[{} sidecar stderr] {}", ts, String::from_utf8_lossy(&line));
+                            log::error!("[{} sidecar stderr] {}", ts, String::from_utf8_lossy(&line).trim_end());
                         }
                         CommandEvent::Terminated(payload) => {
-                            print!("[{} sidecar] terminated with code: {:?}", ts, payload.code);
+                            log::warn!("[{} sidecar] terminated with code: {:?}", ts, payload.code);
                         }
                         _ => {}
                     }
@@ -55,7 +64,7 @@ pub fn run() {
             let state = app.state::<ServerState>();
             *state.0.lock().unwrap() = Some(child);
 
-            println!("Server started on http://127.0.0.1:8768");
+            log::info!("Server started on http://127.0.0.1:8768");
             Ok(())
         })
         .build(tauri::generate_context!())
@@ -67,7 +76,7 @@ pub fn run() {
                 let mut guard = state.0.lock().unwrap();
                 if let Some(child) = guard.take() {
                     let _ = child.kill();
-                    println!("Server stopped");
+                    log::info!("Server stopped");
                 }
             }
         });

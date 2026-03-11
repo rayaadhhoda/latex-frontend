@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Build script for latex-chatbot.
+Build script for Spartan Write.
 
 This script:
 1. Builds the CLI wheel using uv
@@ -236,11 +236,11 @@ def build_tauri_release():
 def build_tauri_debug():
     """Run tauri build with debug flag."""
     print("\n=== Building Tauri app ===")
-    run(["npm", "run", "tauri", "bundle", "--", "--debug"], cwd=FRONTEND_DIR)
+    run(["npm", "run", "tauri", "build", "--", "--debug"], cwd=FRONTEND_DIR)
 
 
 def main():
-    print("=== latex-chatbot build script ===")
+    print("=== Spartan Write build script ===")
 
     target_triple = get_target_triple()
     print(f"+ Target triple: {target_triple}")

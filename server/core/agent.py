@@ -196,8 +196,8 @@ def create_model():
 
     return ChatOpenAI(
         default_headers={
-            'X-Title': 'LaTeX Chatbot',
-            'HTTP-Referer': 'https://vivekraman.dev/blog/latex-chatbot',
+            'X-Title': 'Spartan Write',
+            'HTTP-Referer': 'https://vivekraman.dev/blog/spartan-write',
         },
         model=api_model,
         api_key=api_key,

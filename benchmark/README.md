@@ -1,3 +1,3 @@
 # benchmark
 
-Benchmark tooling and dataset runner for the latex-chatbot project.
+Benchmark tooling and dataset runner for the Spartan-Write project.

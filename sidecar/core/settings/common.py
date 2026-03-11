@@ -3,4 +3,4 @@ from pathlib import Path
 
 
 def get_config_dir() -> Path:
-    return user_config_path(appname="latex-chatbot", roaming=True)
+    return user_config_path(appname="spartan-write", roaming=True)

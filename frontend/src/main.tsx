@@ -19,6 +19,15 @@ if (typeof window !== "undefined") {
   }
 }
 
+// Forward Rust/Tauri logs to the webview devtools console when running in Tauri.
+if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+  import("@tauri-apps/plugin-log")
+    .then(({ attachConsole }) => attachConsole())
+    .catch(() => {
+      // ignore logger initialization errors
+    });
+}
+
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <BrowserRouter>

@@ -9,14 +9,18 @@ init:
 	@echo "Initialized project! Run 'make dev' to start the development server."
 
 server:
-	@cd sidecar && uv run latex-chatbot-sidecar
+	@cd sidecar && uv run spartan-write-sidecar
 
 dev:
-	@uv run build.py --debug
-	@cd frontend && open "./src-tauri/target/debug/bundle/macos/Spartan Write.app"
+	@uv run build.py --link-only
+	@cd frontend && npm run tauri dev
 
 build:
 	@uv run build.py
+
+build-debug:
+	@uv run build.py --debug
+	@cd frontend && open "./src-tauri/target/debug/bundle/macos/Spartan Write.app"
 
 do-benchmark:
 	@cd benchmark && uv run benchmark --dir temp run $(filter-out $@,$(MAKECMDGOALS))

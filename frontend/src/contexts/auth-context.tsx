@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { AuthKitProvider, useAuth } from "@workos-inc/authkit-react";
 import { VITE_WORKOS_CLIENT_ID } from "@/api/auth-keys";
-import { getConfig, updateConfig } from "@/api/client";
 import { exchangeCodeForToken } from "@/lib/auth";
 
 const WORKOS_CODE_VERIFIER_KEY = "workos:code-verifier";
@@ -48,20 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const [authKey, setAuthKey] = useState(0);
 
-  // On load: sync refresh token from /config API into localStorage
-  useEffect(() => {
-    getConfig("workos_refresh_token")
-      .then((res) => {
-        const token = res.data?.config?.workos_refresh_token;
-        if (token) {
-          window.localStorage.setItem(WORKOS_REFRESH_TOKEN_KEY, token);
-          setAuthKey((k) => k + 1);
-        }
-      })
-      .catch(() => {
-        // Sidecar may not be running yet; ignore
-      });
-  }, []);
+
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
@@ -81,9 +67,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 window.localStorage.setItem(
                   WORKOS_REFRESH_TOKEN_KEY,
                   refreshToken
-                );
-                updateConfig({ workos_refresh_token: refreshToken }).catch(
-                  () => { }
                 );
                 setAuthKey((k) => k + 1);
               })
