@@ -27,6 +27,7 @@ The project consists of three main components:
 
 2.  **Run Development Environment**:
     Starts the server, sidecar, and the frontend in development mode.
+    You must run `make build` once to set up deeplinks for authentication, before trying to start the dev server.
     ```bash
     make dev
     ```

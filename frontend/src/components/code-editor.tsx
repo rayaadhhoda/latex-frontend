@@ -70,6 +70,7 @@ export default function CodeEditor({
     monaco.languages.setMonarchTokensProvider('latex', {
       tokenizer: {
         root: [
+          [/\\\\/, 'operator'],  // double backslash (line break) – escape macro highlighting
           [/\\(?:begin|end|section|subsection|cite|ref)/, 'keyword'],
           [/\\(?:[a-zA-Z]+)/, 'type'],
           [/\\[%$&#_{}~^]/, 'type'],
@@ -120,6 +121,7 @@ export default function CodeEditor({
       inherit: true,
       rules: [
         { token: 'keyword', foreground: 'C586C0', fontStyle: 'bold' },
+        { token: 'operator', foreground: '9CDCFE' },
         { token: 'type', foreground: '4EC9B0' },
         { token: 'comment', foreground: '6A9955' },
         { token: 'string', foreground: 'CE9178' },

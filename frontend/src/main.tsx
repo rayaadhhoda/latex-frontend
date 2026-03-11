@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { ThemeProvider } from "./contexts/theme-context";
 import { AccessibilityProvider } from "./contexts/accessibility-context";
+import { AuthProvider } from "./contexts/auth-context";
 import { SettingsProvider } from "./contexts/settings-context";
 import "./index.css";
 import "@copilotkit/react-core/v2/styles.css";
@@ -24,7 +25,9 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
       <ThemeProvider>
         <AccessibilityProvider>
           <SettingsProvider>
-            <App />
+            <AuthProvider>
+              <App />
+            </AuthProvider>
           </SettingsProvider>
         </AccessibilityProvider>
       </ThemeProvider>

@@ -53,6 +53,7 @@ class UpdateConfigRequest(BaseModel):
     openai_api_key: str | None = None
     openai_api_model: str | None = None
     full_name: str | None = None
+    workos_refresh_token: str | None = None
 
 
 class UpdateFileContentRequest(BaseModel):

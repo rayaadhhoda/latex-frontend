@@ -227,10 +227,16 @@ def copy_sidecar(exe_path: Path, target_triple: str) -> Path:
     return dest
 
 
-def build_tauri():
+def build_tauri_release():
     """Run tauri build to create the final app bundle."""
     print("\n=== Building Tauri app ===")
     run(["npm", "run", "tauri", "build"], cwd=FRONTEND_DIR)
+
+
+def build_tauri_debug():
+    """Run tauri build with debug flag."""
+    print("\n=== Building Tauri app ===")
+    run(["npm", "run", "tauri", "bundle", "--", "--debug"], cwd=FRONTEND_DIR)
 
 
 def main():
@@ -256,7 +262,10 @@ def main():
 
     # Step 4: Build Tauri app
     if "--link-only" not in sys.argv:
-        build_tauri()
+        if "--debug" in sys.argv:
+            build_tauri_debug()
+        else:
+            build_tauri_release()
 
     print("\n=== Build complete ===")
 

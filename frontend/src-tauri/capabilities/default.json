@@ -9,11 +9,13 @@
     "core:default",
     "opener:default",
     "dialog:allow-open",
+    "shell:allow-open",
+    "deep-link:default",
     {
       "identifier": "shell:allow-spawn",
       "allow": [
         {
-          "name": "bin/latex-chatbot-cli",
+          "name": "bin/spartan-write-sidecar",
           "sidecar": true
         }
       ]

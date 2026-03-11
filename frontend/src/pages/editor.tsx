@@ -32,6 +32,8 @@ function EditorContent() {
     <CopilotKit
       runtimeUrl={`${SERVER_API_BASE_URL}/copilotkit`}
       agent="0"
+      // headers={{
+      // }}
       properties={{
         folder_path: dir,
         attached_image_path: uploadedImageData?.path ?? null,

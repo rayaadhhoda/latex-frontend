@@ -1,0 +1,15 @@
+{"sessionId":"147986","location":"auth-context.tsx:useEffect","message":"onOpenUrl setup starting","data":{},"hypothesisId":"H3","timestamp":1773123667096}
+{"sessionId":"147986","location":"auth-context.tsx:useEffect","message":"onOpenUrl setup starting","data":{},"hypothesisId":"H3","timestamp":1773123667097}
+{"sessionId":"147986","location":"auth-context.tsx:useEffect","message":"onOpenUrl setup starting","data":{},"hypothesisId":"H3","timestamp":1773123667110}
+{"sessionId":"147986","location":"auth-context.tsx:onOpenUrl-then","message":"listener registered","data":{},"hypothesisId":"H3","timestamp":1773123667110}
+{"sessionId":"147986","location":"auth-context.tsx:onOpenUrl-then","message":"listener registered","data":{},"hypothesisId":"H3","timestamp":1773123667098}
+{"sessionId":"147986","location":"auth-context.tsx:onOpenUrl-then","message":"listener registered","data":{},"hypothesisId":"H3","timestamp":1773123667098}
+{"hypothesisId":"H1","message":"single-instance callback","data":{"argv_len":1,"argv":["/Users/vivek/Documents/Code/latex-chatbot/frontend/src-tauri/target/debug/bundle/macos/Spartan Write.app/Contents/MacOS/Spartan-Write"]},"timestamp":1773123694479}
+{"hypothesisId":"H1","message":"single-instance callback","data":{"argv_len":1,"argv":["/Users/vivek/Documents/Code/latex-chatbot/frontend/src-tauri/target/debug/bundle/macos/Spartan Write.app/Contents/MacOS/Spartan-Write"]},"timestamp":1773123731178}
+{"sessionId":"147986","location":"auth-context.tsx:useEffect","message":"onOpenUrl setup starting","data":{},"hypothesisId":"H3","timestamp":1773123868476}
+{"sessionId":"147986","location":"auth-context.tsx:useEffect","message":"onOpenUrl setup starting","data":{},"hypothesisId":"H3","timestamp":1773123868474}
+{"sessionId":"147986","location":"auth-context.tsx:onOpenUrl-then","message":"listener registered","data":{},"hypothesisId":"H3","timestamp":1773123868479}
+{"sessionId":"147986","location":"auth-context.tsx:onOpenUrl-then","message":"listener registered","data":{},"hypothesisId":"H3","timestamp":1773123868479}
+{"sessionId":"147986","location":"auth-context.tsx:useEffect","message":"onOpenUrl setup starting","data":{},"hypothesisId":"H3","timestamp":1773123868538}
+{"sessionId":"147986","location":"auth-context.tsx:onOpenUrl-then","message":"listener registered","data":{},"hypothesisId":"H3","timestamp":1773123868539}
+{"hypothesisId":"H1","message":"single-instance callback","data":{"argv_len":1,"argv":["/Users/vivek/Documents/Code/latex-chatbot/frontend/src-tauri/target/debug/bundle/macos/Spartan Write.app/Contents/MacOS/Spartan-Write"]},"timestamp":1773123889667}

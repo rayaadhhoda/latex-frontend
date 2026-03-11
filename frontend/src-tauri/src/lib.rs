@@ -1,29 +1,39 @@
 use std::sync::Mutex;
 use tauri::Manager;
-use tauri_plugin_shell::ShellExt;
 use tauri_plugin_shell::process::CommandChild;
+use tauri_plugin_shell::ShellExt;
 
 // Global state to hold the server process
 struct ServerState(Mutex<Option<CommandChild>>);
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default();
+
+    #[cfg(desktop)]
+    {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|_app, _argv, _cwd| {}));
+    }
+
+    builder
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(ServerState(Mutex::new(None)))
         .setup(|app| {
             // Launch the sidecar server on startup
-            let sidecar = app.shell().sidecar("spartan-write-sidecar")
+            let sidecar = app
+                .shell()
+                .sidecar("spartan-write-sidecar")
                 .expect("Failed to create sidecar command");
-            
+
             let (mut rx, child) = sidecar.spawn().expect("Failed to spawn sidecar");
 
             // Log sidecar output for debugging
             tauri::async_runtime::spawn(async move {
-                use tauri_plugin_shell::process::CommandEvent;
                 use chrono::Local;
+                use tauri_plugin_shell::process::CommandEvent;
                 while let Some(event) = rx.recv().await {
                     let ts = Local::now().format("%H:%M:%S");
                     match event {

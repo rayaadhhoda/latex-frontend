@@ -5,20 +5,15 @@
 init:
 	@cd sidecar && uv sync
 	@cd frontend && npm install
-	@uv run build.py --link-only
+	@uv run build.py --debug
 	@echo "Initialized project! Run 'make dev' to start the development server."
 
 server:
 	@cd sidecar && uv run latex-chatbot-sidecar
 
-gui:
-	@cd frontend && npm run tauri dev
-
 dev:
-	@echo "Starting development server..."
-	@uv run build.py --link-only
-	@echo "Starting Tauri app..."
-	@cd frontend && npm run tauri dev
+	@uv run build.py --debug
+	@cd frontend && open "./src-tauri/target/debug/bundle/macos/Spartan Write.app"
 
 build:
 	@uv run build.py

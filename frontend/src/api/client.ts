@@ -145,6 +145,7 @@ export interface ConfigData {
   openai_api_key?: string;
   openai_api_model?: string;
   full_name?: string;
+  workos_refresh_token?: string;
 }
 
 export async function getConfig(
