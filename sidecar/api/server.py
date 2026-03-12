@@ -68,6 +68,12 @@ class RemoveUploadedImageRequest(BaseModel):
     uploaded_path: str
 
 
+class MoveImageToProjectRequest(BaseModel):
+    uploaded_path: str
+    project_dir: str
+    target_dir: str = "figures"
+
+
 app = FastAPI(title="Spartain Write - Sidecar")
 
 
@@ -170,6 +176,19 @@ async def delete_uploaded_image(request: RemoveUploadedImageRequest):
         raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/move-image-to-project")
+async def move_image_to_project(request: MoveImageToProjectRequest):
+    try:
+        moved_path = project.image.move_uploaded_image_to_project(
+            request.uploaded_path, Path(request.project_dir),
+            request.target_dir)
+        return {"success": True, "data": {"moved_path": moved_path}}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

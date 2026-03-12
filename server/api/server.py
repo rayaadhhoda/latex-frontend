@@ -67,8 +67,10 @@ async def chat(request: ChatRequest):
                                  openai_api_base=request.openai_api_base,
                                  openai_api_model=request.openai_api_model)
         folder_path = Path(request.dir)
-        graph = agent.create_graph(creds, folder_path,
-                                   request.attached_image_path)
+        graph = agent.create_graph(creds,
+                                   folder_path,
+                                   request.attached_image_path,
+                                   local_execution=True)
         thread_id = str(uuid.uuid4())
         config = {"configurable": {"thread_id": thread_id}}
         initial_state = {"messages": [HumanMessage(content=request.prompt)]}

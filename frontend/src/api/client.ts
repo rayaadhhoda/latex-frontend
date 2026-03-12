@@ -144,6 +144,21 @@ export async function removeUploadedImage(
   });
 }
 
+export async function moveImageToProject(
+  uploadedPath: string,
+  projectDir: string,
+  targetDir: string = "figures",
+): Promise<ApiResponse<{ moved_path: string }>> {
+  return request(API_ENDPOINTS.MOVE_IMAGE_TO_PROJECT, {
+    method: "POST",
+    body: JSON.stringify({
+      uploaded_path: uploadedPath,
+      project_dir: projectDir,
+      target_dir: targetDir,
+    }),
+  });
+}
+
 export interface ConfigData {
   openai_api_base?: string;
   openai_api_key?: string;

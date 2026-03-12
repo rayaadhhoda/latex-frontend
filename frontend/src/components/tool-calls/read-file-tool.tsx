@@ -1,15 +1,25 @@
-import { useRenderToolCall } from "@copilotkit/react-core";
+import { useFrontendTool } from "@copilotkit/react-core";
 import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "../ai-elements/tool";
 import { CodeBlock } from "../ai-elements/code-block";
+import { getFileContent } from "@/api/client";
 
-export default function useRenderReadFileTool() {
-  useRenderToolCall({
+export default function useReadFileTool(dir: string) {
+  useFrontendTool({
     name: "read_file_tool",
-    description: "read a file",
+    description: "Read the contents of a file in the project directory.",
     parameters: [{
       name: "file_path",
       type: "string",
+      description: "Relative path to the file from the project root (e.g., 'main.tex' or 'refs.bib')",
     }],
+    handler: async ({ file_path }) => {
+      try {
+        const res = await getFileContent(dir, file_path);
+        return res.data?.content ?? `Error: could not read '${file_path}'`;
+      } catch (e) {
+        return `Error reading file '${file_path}': ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
     render: ({ args: { file_path }, status, result }) => {
       if (status === "executing") {
         return (

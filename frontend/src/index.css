@@ -193,15 +193,40 @@
 }
 
 /* CopilotKit chat layout tweaks */
-.copilotKitMessages {
+.copilotKitMessages,
+[data-testid="copilot-message-list"] {
   flex: 1;
   min-height: 0;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
   padding-top: 0.75rem;
   padding-bottom: 0.75rem;
   overflow-y: auto;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .copilotKitMessagesContainer {
+  min-width: 0;
   row-gap: 0.5rem;
+}
+
+.copilotKitMessages pre,
+.copilotKitMessages code {
+  overflow-x: auto;
+}
+
+/* Force text wrapping in message content (p, span, div, etc.) */
+.copilotKitMessages p,
+.copilotKitMessages span,
+.copilotKitMessages div {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Ensure flex children in chat panel can shrink */
+.ai-chat-panel > * {
+  min-width: 0;
 }
 

@@ -17,13 +17,13 @@ import {
 } from "@/components/ui/resizable";
 import { CopilotKit } from "@copilotkit/react-core";
 import { SERVER_API_BASE_URL } from "@/api/constants";
-import { getWorkosRefreshToken } from "@/lib/auth";
+import { useTokenRefresh } from "@/lib/auth";
 
 function EditorContent() {
   const { currentFile, compileAndRefresh, loadFile, dir } = useEditor();
   const { uploadedImageData } = useImageForAIChat();
   const [activeTab, setActiveTab] = useState<"preview" | "source">("preview");
-  const token = getWorkosRefreshToken();
+  const token = useTokenRefresh();
 
   // FIXME: Invoke this when the AI chat is complete
   // const onComplete = () => {
@@ -64,7 +64,7 @@ function EditorContent() {
                   {activeTab === "source" ? <CodeEditor /> : <PDFView />}
                 </div>
               </ResizablePanel>
-              <ResizableHandle withHandle />
+              <ResizableHandle />
               <ResizablePanel defaultSize="30%" minSize="20%" maxSize="55%">
                 <div className="h-full min-w-0 min-h-0">
                   <AIChat />

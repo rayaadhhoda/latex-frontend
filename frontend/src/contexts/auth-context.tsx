@@ -3,7 +3,11 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { AuthKitProvider, useAuth } from "@workos-inc/authkit-react";
 import { WORKOS_CLIENT_ID } from "@/api/auth-keys";
-import { exchangeCodeForToken, WORKOS_REFRESH_TOKEN_KEY } from "@/lib/auth";
+import {
+  exchangeCodeForToken,
+  WORKOS_ACCESS_TOKEN_KEY,
+  WORKOS_REFRESH_TOKEN_KEY,
+} from "@/lib/auth";
 
 const WORKOS_CODE_VERIFIER_KEY = "workos:code-verifier";
 
@@ -61,8 +65,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           );
           if (code && codeVerifier) {
             exchangeCodeForToken(code, codeVerifier)
-              .then(({ refreshToken }) => {
+              .then(({ accessToken, refreshToken }) => {
                 window.sessionStorage.removeItem(WORKOS_CODE_VERIFIER_KEY);
+                window.localStorage.setItem(WORKOS_ACCESS_TOKEN_KEY, accessToken);
                 window.localStorage.setItem(
                   WORKOS_REFRESH_TOKEN_KEY,
                   refreshToken
@@ -94,8 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthKitProvider
       key={authKey}
       clientId={WORKOS_CLIENT_ID}
-      redirectUri="spartan-write://auth-callback"
-      devMode={true}>
+      redirectUri="spartan-write://auth-callback">
       <RedirectWhenUnauthenticated>{children}</RedirectWhenUnauthenticated>
     </AuthKitProvider>
   );

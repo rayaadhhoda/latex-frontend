@@ -1,14 +1,17 @@
 from pathlib import Path
 from textwrap import dedent
+
 from langchain_openai import ChatOpenAI
-from langchain_core.tools import tool
-from langchain_core.messages import SystemMessage
-from langgraph.graph import StateGraph, START
+from langchain_core.messages import AIMessage, SystemMessage, ToolMessage
+from langgraph.graph import StateGraph, START, END
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.types import interrupt
 from copilotkit import CopilotKitState
 from pydantic import BaseModel
+
+from .local_tools import create_local_tools
 
 
 class AgentCreds(BaseModel):
@@ -75,122 +78,10 @@ SYSTEM_PROMPT = dedent(
           Then, `1_1_introduction.tex` is imported in main.tex using \\input{sections/1_1_introduction}.
 
         If you understand, reply with "Let's get started!"
+
+        IMPORTANT: You must use the provided tools (function calling) to perform actions.
+        Never output tool calls as text or XML tags. Use the actual tool/function API.
         """).strip()
-
-
-def create_tools(folder_path: Path, attached_image_path: str | None):
-    """Create tools bound to a specific folder path."""
-
-    # @tool
-    # def read_file_tool(file_path: str) -> str:
-    #     """Read the contents of a file in the project directory.
-
-    #     Args:
-    #         file_path: Relative path to the file from the project root (e.g., 'main.tex' or 'refs.bib')
-    #     """
-    #     full_path = folder_path / file_path
-    #     if not full_path.exists():
-    #         return f"Error: File '{file_path}' does not exist in the project directory."
-    #     if not full_path.is_file():
-    #         return f"Error: '{file_path}' is not a file."
-    #     try:
-    #         return read_file(full_path)
-    #     except Exception as e:
-    #         return f"Error reading file '{file_path}': {str(e)}"
-
-    # @tool
-    # def edit_file_tool(file_path: str, content: str) -> str:
-    #     """Edit or create a file in the project directory.
-
-    #     Args:
-    #         file_path: Relative path to the file from the project root (e.g., 'main.tex' or 'refs.bib')
-    #         content: The complete content to write to the file
-    #     """
-    #     full_path = folder_path / file_path
-    #     try:
-    #         full_path.parent.mkdir(parents=True, exist_ok=True)
-    #         edit_file(full_path, content)
-    #         return f"Successfully updated '{file_path}'."
-    #     except Exception as e:
-    #         return f"Error writing to file '{file_path}': {str(e)}"
-
-    # @tool
-    # def list_files_tool(recursive: bool = True) -> str:
-    #     """List all files in the project directory.
-
-    #     Args:
-    #         recursive: If True, list files recursively in subdirectories. If False, only list files in the root directory.
-    #     """
-    #     files = list_files(folder_path, recursive=recursive)
-    #     if not files:
-    #         return "No files found in the project directory."
-    #     file_list = "\n".join(f"  - {f}" for f in files)
-    #     return f"Files in project directory:\n{file_list}"
-
-    # @tool
-    # def compile_latex_tool() -> str:
-    #     """Compile the LaTeX project."""
-    #     result = compile_project(folder_path)
-    #     if result.success:
-    #         return "SUCCESS"
-    #     print(result.stderr)
-    #     return f"FAILED: {result.stderr}"
-
-    # @tool
-    # def read_attached_image_tool():
-    #     """Read the currently attached image and return an image-part style message."""
-    #     if not attached_image_path:
-    #         return [{
-    #             "type": "text",
-    #             "text": "Error: No image is currently attached."
-    #         }]
-
-    #     try:
-    #         image_b64 = get_uploaded_image_bytes_b64(attached_image_path)
-    #     except Exception as e:
-    #         return [{
-    #             "type": "text",
-    #             "text": f"Error reading attached image: {str(e)}",
-    #         }]
-
-    #     suffix = Path(attached_image_path).suffix.lower()
-    #     media_type = {
-    #         ".png": "image/png",
-    #         ".jpg": "image/jpeg",
-    #         ".jpeg": "image/jpeg",
-    #         ".gif": "image/gif",
-    #         ".webp": "image/webp",
-    #     }.get(suffix, "image/png")
-
-    #     return [{
-    #         "type": "image",
-    #         "source": {
-    #             "type": "base64",
-    #             "media_type": media_type,
-    #             "data": image_b64,
-    #         },
-    #     }]
-
-    # @tool
-    # def move_attached_image_to_project_tool() -> str:
-    #     """Move the currently attached image into the project's figures directory."""
-    #     if not attached_image_path:
-    #         return "Error: No image is currently attached."
-    #     try:
-    #         moved_relative_path = move_uploaded_image_to_project(
-    #             attached_image_path, folder_path)
-    #         return f"Moved attached image to '{moved_relative_path}'."
-    #     except Exception as e:
-    #         return f"Error moving attached image into project: {str(e)}"
-
-    return [
-        # read_file_tool,
-        # edit_file_tool,
-        # list_files_tool,
-        # compile_latex_tool,
-        # read_attached_image_tool,
-        # move_attached_image_to_project_tool,
-    ]
 
 
 def create_model(creds: AgentCreds):
@@ -208,23 +99,184 @@ def create_model(creds: AgentCreds):
     )
 
 
-def create_graph(creds: AgentCreds, folder_path: Path,
-                 attached_image_path: str | None) -> CompiledStateGraph:
-    """Create and return a configured LangGraph agent."""
+# Schema-only tools for CopilotKit path. Names/schemas must match frontend useFrontendTool.
+# Execution happens on the frontend; we only need the model to output structured tool calls.
+FRONTEND_TOOL_SCHEMAS: list[dict] = [
+    {
+        "type": "function",
+        "function": {
+            "name": "list_files_tool",
+            "description": "List all files in the project directory.",
+            "parameters": {
+                "type": "object",
+                "properties": {}
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "read_file_tool",
+            "description":
+            "Read the contents of a file in the project directory.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type":
+                        "string",
+                        "description":
+                        "Relative path to the file from the project root (e.g., 'main.tex' or 'refs.bib')",
+                    },
+                },
+                "required": ["file_path"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "edit_file_tool",
+            "description": "Edit or create a file in the project directory.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type":
+                        "string",
+                        "description":
+                        "Relative path to the file from the project root (e.g., 'main.tex' or 'refs.bib')",
+                    },
+                    "content": {
+                        "type": "string",
+                        "description":
+                        "The complete content to write to the file",
+                    },
+                },
+                "required": ["file_path", "content"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "compile_latex_tool",
+            "description": "Compile the LaTeX project.",
+            "parameters": {
+                "type": "object",
+                "properties": {}
+            },
+        },
+    },
+    # {
+    #     "type": "function",
+    #     "function": {
+    #         "name": "read_attached_image_tool",
+    #         "description":
+    #         "Read the currently attached image and return its base64-encoded bytes.",
+    #         "parameters": {
+    #             "type": "object",
+    #             "properties": {}
+    #         },
+    #     },
+    # },
+    {
+        "type": "function",
+        "function": {
+            "name": "move_attached_image_to_project_tool",
+            "description":
+            "Move the currently attached image into the project's figures directory.",
+            "parameters": {
+                "type": "object",
+                "properties": {}
+            },
+        },
+    },
+]
+
+
+def create_graph(creds: AgentCreds,
+                 folder_path: Path,
+                 attached_image_path: str | None,
+                 local_execution: bool = False) -> CompiledStateGraph:
+    """Create and return a configured LangGraph agent.
+
+    When local_execution is True, server-side tools are bound to the model and
+    included in the graph.  When False (CopilotKit path), schema-only tools are
+    always bound so the model outputs structured tool calls; execution is on the frontend.
+    """
     model = create_model(creds)
-    tools = create_tools(folder_path, attached_image_path)
-    model_with_tools = model.bind_tools(tools)
+
+    if local_execution:
+        tools = create_local_tools(folder_path, attached_image_path)
+        model_with_tools = model.bind_tools(tools)
+    else:
+        # CopilotKit path: always bind schema-only tools so model uses function calling
+        model_with_tools = model.bind_tools(FRONTEND_TOOL_SCHEMAS)
 
     def call_model(state: CopilotKitState):
         messages = [SystemMessage(content=SYSTEM_PROMPT)] + state["messages"]
         return {"messages": [model_with_tools.invoke(messages)]}
 
+    def should_continue_after_agent(state: CopilotKitState) -> str:
+        """Route to frontend_tools if last message has tool_calls, else END."""
+        messages = state.get("messages") or []
+        if not messages:
+            return "end"
+        last = messages[-1]
+        if isinstance(last, AIMessage) and last.tool_calls:
+            return "frontend_tools"
+        return "end"
+
+    def frontend_tools_node(state: CopilotKitState):
+        """Interrupt for frontend to execute tools, then add ToolMessages on resume."""
+        messages = state["messages"]
+        last = messages[-1]
+        tool_calls = last.tool_calls
+        # Interrupt: frontend executes tools and sends result via resolve()
+        result = interrupt({
+            "tool_calls": [{
+                "id": tc["id"],
+                "name": tc["name"],
+                "args": tc.get("args", {})
+            } for tc in tool_calls],
+        })
+        # Resume: result is list of {tool_call_id, content} or list of strings
+        tool_messages = []
+        if isinstance(result, list):
+            for i, tc in enumerate(tool_calls):
+                item = result[i] if i < len(result) else ""
+                content = item.get("content", item) if isinstance(
+                    item, dict) else str(item)
+                tool_messages.append(
+                    ToolMessage(tool_call_id=tc["id"], content=content))
+        elif isinstance(result, dict):
+            for tc in tool_calls:
+                content = result.get(tc["id"], result.get("content", ""))
+                tool_messages.append(
+                    ToolMessage(tool_call_id=tc["id"], content=str(content)))
+        else:
+            # Single tool, result is the content string
+            tool_messages.append(
+                ToolMessage(tool_call_id=tool_calls[0]["id"],
+                            content=str(result)))
+        return {"messages": tool_messages}
+
     workflow = StateGraph(CopilotKitState)
     workflow.add_node("agent", call_model)
-    workflow.add_node("tools", ToolNode(tools))
     workflow.add_edge(START, "agent")
-    workflow.add_conditional_edges("agent", tools_condition)
-    workflow.add_edge("tools", "agent")
+
+    if local_execution:
+        workflow.add_node("tools", ToolNode(tools))
+        workflow.add_conditional_edges("agent", tools_condition)
+        workflow.add_edge("tools", "agent")
+    else:
+        workflow.add_node("frontend_tools", frontend_tools_node)
+        workflow.add_conditional_edges("agent", should_continue_after_agent, {
+            "frontend_tools": "frontend_tools",
+            "end": END
+        })
+        workflow.add_edge("frontend_tools", "agent")
 
     memory = MemorySaver()
     graph = workflow.compile(checkpointer=memory)

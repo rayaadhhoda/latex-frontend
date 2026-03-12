@@ -1,11 +1,15 @@
-import asyncio
+import dotenv
+
+dotenv.load_dotenv()
+
 import os
 from pathlib import Path
 import click
 
 from core.bench import run_benchmarks
-from core.utils import locate_server
+from core.utils import locate_server, load_creds
 from core.dataset import clone_dataset, load_dataset
+from core.dashboard import main as dashboard_main
 
 
 @click.group(invoke_without_command=True)
@@ -35,7 +39,8 @@ def cli(ctx: click.Context, dir: str | None) -> None:
 @click.option(
     "--new-only",
     is_flag=True,
-    help="Run benchmarks for new dataset entries while preserving existing runs.",
+    help=
+    "Run benchmarks for new dataset entries while preserving existing runs.",
 )
 def run(ctx: click.Context, new_only: bool) -> None:
     """Run benchmarks."""
@@ -45,7 +50,17 @@ def run(ctx: click.Context, new_only: bool) -> None:
     locate_server(context)
     load_dataset(context, new_only)
     clone_dataset(context)
+    load_creds(context)
     run_benchmarks(context)
+
+
+@cli.command()
+@click.pass_context
+def dashboard(ctx: click.Context) -> None:
+    """Serve the benchmark dashboard."""
+    import sys
+    sys.argv = [sys.argv[0], "--dir", str(ctx.obj.get("dir", os.getcwd()))]
+    dashboard_main()
 
 
 def main() -> None:

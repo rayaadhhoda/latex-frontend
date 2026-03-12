@@ -18,4 +18,5 @@ export const API_ENDPOINTS = {
   CONFIG: "/config",
   NUKE: "/nuke",
   CHATBOT: "/chatbot",
+  MOVE_IMAGE_TO_PROJECT: "/move-image-to-project",
 } as const;

@@ -5,8 +5,7 @@ import TopNavigation from "@/components/top-navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-
-const WORKOS_REFRESH_TOKEN_KEY = "workos:refresh-token";
+import { WORKOS_ACCESS_TOKEN_KEY, WORKOS_REFRESH_TOKEN_KEY } from "@/lib/auth";
 
 function getInitials(firstName: string | null, lastName: string | null): string {
   const first = (firstName ?? "").trim();
@@ -29,7 +28,8 @@ export default function Settings() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    signOut();
+    signOut({ returnTo: "/onboarding", navigate: false });
+    window.localStorage.removeItem(WORKOS_ACCESS_TOKEN_KEY);
     window.localStorage.removeItem(WORKOS_REFRESH_TOKEN_KEY);
     navigate("/onboarding", { replace: true });
   };
