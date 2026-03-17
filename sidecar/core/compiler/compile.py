@@ -1,3 +1,5 @@
+import os
+import sys
 from pathlib import Path
 from dataclasses import dataclass
 import subprocess
@@ -109,8 +111,12 @@ def compile_project(
         CompileResult with success status, PDF path, and output streams
     """
     _validate_main_tex(dir)
-    target_triple = _get_target_triple()
-    tectonic_bin = Path(f"./bin/tectonic-{target_triple}")
+
+    # Tauri bundles sidecars next to this process's executable (cwd is not set to app dir)
+    tectonic_bin = Path(sys.executable).parent.resolve() / "tectonic"
+    if not tectonic_bin.exists():
+        target_triple = _get_target_triple()
+        tectonic_bin = Path("bin") / f"tectonic-{target_triple}"
 
     main_tex = dir / "main.tex"
     pdf_path = dir / "main.pdf"

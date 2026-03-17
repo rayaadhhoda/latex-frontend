@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from "react";
-import { Folder, Plus, FolderPlus, RefreshCw } from "lucide-react";
+import { Folder, RefreshCw } from "lucide-react";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useEditor } from "@/contexts/editor-context";
 import { Button } from "@/components/ui/button";
@@ -140,13 +140,12 @@ export default function FileBrowser({ onFileSelect, selectedFile }: FileBrowserP
             <span className="font-semibold text-sm">Files</span>
           </div>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon-xs" className="h-6 w-6">
-              <FolderPlus className="h-3 w-3" />
-            </Button>
-            <Button variant="ghost" size="icon-xs" className="h-6 w-6">
-              <Plus className="h-3 w-3" />
-            </Button>
-            <Button variant="ghost" size="icon-xs" className="h-6 w-6" onClick={async () => { await refreshFiles(); if (currentFile) await loadFile(currentFile); }}>
+            <Button variant="ghost" size="icon-xs" className="h-6 w-6" onClick={async () => { 
+              await refreshFiles();
+              if (currentFile) {
+                await loadFile(currentFile);
+              }
+            }}>
               <RefreshCw className="h-3 w-3" />
             </Button>
           </div>
