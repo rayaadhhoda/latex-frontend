@@ -11,6 +11,15 @@ init:
 sidecar:
 	@cd sidecar && uv run spartan-write-sidecar
 
+server:
+	@cd server && uv run spartan-write-server
+
+docs:
+	@cd user-guide && uv run mkdocs serve
+
+build-docs:
+	@cd user-guide && uv run mkdocs build
+
 build:
 	@uv run build.py
 

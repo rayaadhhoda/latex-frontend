@@ -1,0 +1,17 @@
+site_name: Spartan Write - User Guide
+theme:
+  name: shadcn
+
+watch:
+  - docs/
+
+plugins:
+  - search
+  - mermaid2
+
+markdown_extensions:
+  - pymdownx.blocks.tab
+  - pymdownx.superfences
+
+extra_javascript:
+  - js/tab-sync.js

@@ -1,0 +1,13 @@
+[project]
+name = "spartan-write-user-guide"
+version = "0.1.0"
+description = "Spartan Write - User Guide"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.7.5",
+    "mkdocs-mermaid2-plugin>=1.2.3",
+    "mkdocs-shadcn>=0.10.1",
+    "pymdownx-blocks>=0.1.1",
+]
