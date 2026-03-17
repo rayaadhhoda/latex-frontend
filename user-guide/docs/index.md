@@ -2,33 +2,10 @@
 
 **Spartan Write - your AI word processor tailored for LaTeX documents**
 
-# Installation
+## Features
 
-/// tab | Tab 1 title
-Tab 1 content
-///
-
-/// tab | Tab 2 title
-Tab 2 content
-///
-
-asdasd
-
-/// tab | Tab 1 title
-Tab 1 content
-///
-
-/// tab | Tab 2 title
-Tab 2 content
-///
-
-a
-sdafq
-
-/// tab | Tab 1 title
-Tab 1 content
-///
-
-/// tab | Tab 2 title
-Tab 2 content
-///
+- Chat with your project
+- Make intelligent edits to your documents
+- Bring your own key or use SJSU access
+- Open source
+- Safe to use
