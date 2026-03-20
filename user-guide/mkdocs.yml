@@ -1,9 +1,8 @@
 site_name: Spartan Write - User Guide
+site_url: http://localhost:8000/
+
 theme:
   name: shadcn
-
-watch:
-  - docs/
 
 plugins:
   - search

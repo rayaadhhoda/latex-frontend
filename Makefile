@@ -8,13 +8,13 @@ init:
 	@uv run build.py
 	@echo "Initialized project! Run 'make dev' to start the development server."
 
-sidecar:
+run-sidecar:
 	@cd sidecar && uv run spartan-write-sidecar
 
-server:
+run-server:
 	@cd server && uv run spartan-write-server
 
-docs:
+run-docs:
 	@cd user-guide && uv run mkdocs serve
 
 build-docs:
