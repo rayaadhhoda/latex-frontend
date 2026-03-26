@@ -1,4 +1,6 @@
-import { CopilotChat, CopilotChatSuggestionView } from "@copilotkit/react-core/v2";
+import { CopilotChat } from "@copilotkit/react-core/v2";
+import MessageViewAdapter from "./ai-component-adapters/message-view";
+import InputViewAdapter from "./ai-component-adapters/input-view";
 import { useImageForAIChat } from "@/contexts/image-for-ai-chat-context";
 import { useEditor } from "@/contexts/editor-context";
 import UploadedImageItem from "./uploaded-image-item";
@@ -11,7 +13,7 @@ import useMoveAttachedImageToProjectTool from "./tool-calls/move-attached-image-
 
 export default function AIChat() {
   const { dir } = useEditor();
-  const { uploadedImageData, handleAddImage, handleRemoveImage } = useImageForAIChat();
+  const { uploadedImageData, handleRemoveImage } = useImageForAIChat();
 
   useReadFileTool(dir ?? "");
   useListFilesTool(dir ?? "");
@@ -26,15 +28,7 @@ export default function AIChat() {
         <CopilotChat
           className="flex min-w-0 h-full w-full flex-col"
           welcomeScreen={false}
-          disclaimer={() => null}
-          suggestionView={<CopilotChatSuggestionView suggestions={[
-            {
-              'message': 'Message 1',
-              'title': 'Title 1',
-              'isLoading': false,
-            }
-          ]} />
-          }
+          messageView={MessageViewAdapter}
           // TODO: Add suggestions
           // suggestionView={{
           //   suggestions: [
@@ -45,15 +39,15 @@ export default function AIChat() {
           //     }
           //   ]
           // }}
-          input={{
-            onAddFile: handleAddImage,
-          }}
-        />
-
+          input={InputViewAdapter}
+        ></CopilotChat>
       </div>
       {uploadedImageData ? (
         <div className="min-w-0 shrink-0">
-          <UploadedImageItem imageData={uploadedImageData} onRemove={handleRemoveImage} />
+          <UploadedImageItem
+            imageData={uploadedImageData}
+            onRemove={handleRemoveImage}
+          />
         </div>
       ) : null}
     </div>

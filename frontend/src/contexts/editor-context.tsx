@@ -3,6 +3,7 @@ import {
   useContext,
   useState,
   useCallback,
+  useRef,
   type ReactNode,
   useEffect,
 } from "react";
@@ -22,6 +23,7 @@ interface EditorContextValue {
   saveFile: (content: string) => Promise<void>;
   compileAndRefresh: () => Promise<void>;
   clearCompileError: () => void;
+  pdfPreviewPageRef: React.RefObject<number>;
 }
 
 const EditorContext = createContext<EditorContextValue | null>(null);
@@ -39,6 +41,7 @@ export function EditorProvider({ dir, children }: EditorProviderProps) {
   const [compileError, setCompileError] = useState<string | null>(null);
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string | null>(null);
+  const pdfPreviewPageRef = useRef(1);
 
   const refreshFiles = useCallback(async () => {
     if (!dir) return;
@@ -144,6 +147,10 @@ export function EditorProvider({ dir, children }: EditorProviderProps) {
   }, [dir, compilePDF]);
 
   useEffect(() => {
+    pdfPreviewPageRef.current = 1;
+  }, [dir]);
+
+  useEffect(() => {
     setLoading(true);
     setError(null);
     (async () => {
@@ -179,6 +186,7 @@ export function EditorProvider({ dir, children }: EditorProviderProps) {
     saveFile,
     compileAndRefresh,
     clearCompileError: () => setCompileError(null),
+    pdfPreviewPageRef,
   };
 
   return (

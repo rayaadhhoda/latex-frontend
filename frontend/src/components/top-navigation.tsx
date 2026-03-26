@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { HelpCircle, Settings, Moon, Sun, Play } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { ArrowLeft, HelpCircle, Settings, Moon, Sun, Play } from "lucide-react";
 import BrandLogo from "./brand-logo";
 import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect } from "react";
@@ -13,8 +13,13 @@ interface TopNavigationProps {
   canCompile?: boolean;
 }
 
+type SettingsLocationState = { editorSearch?: string };
+
 export default function TopNavigation({ activeTab, onTabChange, onCompile, canCompile }: TopNavigationProps = {}) {
+  const location = useLocation();
   const { isDark, toggleTheme } = useTheme();
+  const isSettingsPage = location.pathname === "/settings";
+  const editorSearchFromState = (location.state as SettingsLocationState | null)?.editorSearch ?? "";
   const [isCompiling, setIsCompiling] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const settingsMenuRef = useRef<HTMLDivElement>(null);
@@ -51,6 +56,13 @@ export default function TopNavigation({ activeTab, onTabChange, onCompile, canCo
   return (
     <div className="h-12 border-b bg-background flex items-center justify-between px-4">
       <div className="flex items-center gap-4">
+        {isSettingsPage && (
+          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" title="Back to editor" asChild>
+            <Link to={{ pathname: "/editor", search: editorSearchFromState }}>
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+        )}
         <BrandLogo />
 
         {activeTab !== undefined && onTabChange && (
@@ -112,7 +124,10 @@ export default function TopNavigation({ activeTab, onTabChange, onCompile, canCo
         </Button>
 
         <Button variant="ghost" size="icon" className="h-8 w-8" title="Settings" asChild>
-          <Link to="/settings">
+          <Link
+            to="/settings"
+            state={location.pathname === "/editor" ? { editorSearch: location.search } : undefined}
+          >
             <Settings className="h-4 w-4" />
           </Link>
         </Button>

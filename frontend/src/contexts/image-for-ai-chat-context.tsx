@@ -42,8 +42,8 @@ export function ImageForAIChatProvider({ children }: ImageForAIChatProviderProps
 
   const handleRemoveImage = async (): Promise<void> => {
     if (!uploadedImageData) return;
-    await removeUploadedImage(uploadedImageData.path);
     setUploadedImageData(null);
+    await removeUploadedImage(uploadedImageData.path);
   };
 
   const value = useMemo(

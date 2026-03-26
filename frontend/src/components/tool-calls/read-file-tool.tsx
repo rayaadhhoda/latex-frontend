@@ -26,7 +26,7 @@ export default function useReadFileTool(dir: string) {
           <Tool>
             <ToolHeader
               state="input-available"
-              title="Read file"
+              title={`Reading ${file_path}...`}
               type="tool-read_file_tool"
             />
             <ToolContent>
@@ -40,14 +40,15 @@ export default function useReadFileTool(dir: string) {
           <Tool>
             <ToolHeader
               state="output-available"
-              title="Read file"
+              title={`Read ${file_path}`}
               type="tool-read_file_tool"
             />
             <ToolContent>
               <ToolInput input={{ file_path }} />
-              <ToolOutput errorText={undefined} output={
-                <CodeBlock code={result} language="latex" />
-              } />
+              <ToolOutput
+                errorText={undefined}
+                output={<CodeBlock code={result} language="latex" />}
+              />
             </ToolContent>
           </Tool>
         );
