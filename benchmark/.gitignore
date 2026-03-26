@@ -18,6 +18,7 @@ build/
 *.tar
 *.gz
 *.bz2
+*.pdf
 
 .env
 .env.local

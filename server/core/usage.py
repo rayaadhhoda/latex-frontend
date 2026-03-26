@@ -18,6 +18,5 @@ def validate_and_fetch_creds(user: User):
 
     return AgentCreds(
         **CREDS,
-        user_id=user.id,
         user_email=user.email,
     )

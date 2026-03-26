@@ -30,6 +30,7 @@ class SafeLangGraphAGUIAgent(LangGraphAGUIAgent):
 class ChatRequest(BaseModel):
     dir: str
     prompt: str
+    user_email: str
     attached_image_path: str | None = None
     openai_api_key: str | None = None
     openai_api_base: str | None = None
@@ -64,7 +65,8 @@ async def chat(request: ChatRequest):
     try:
         creds = agent.AgentCreds(openai_api_key=request.openai_api_key,
                                  openai_api_base=request.openai_api_base,
-                                 openai_api_model=request.openai_api_model)
+                                 openai_api_model=request.openai_api_model,
+                                 user_email=request.user_email)
         folder_path = Path(request.dir)
         graph = agent.create_graph(creds,
                                    folder_path,

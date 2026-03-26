@@ -22,6 +22,7 @@ def load_creds(context: dict) -> None:
     context['openai_api_key'] = os.getenv("OPENAI_API_KEY")
     context['openai_api_base'] = os.getenv("OPENAI_API_BASE")
     context['openai_api_model'] = os.getenv("OPENAI_API_MODEL")
+    context['benchmark_user_email'] = os.getenv("BENCHMARK_USER_EMAIL")
 
 
 def do_chat(context: dict, dir: str, prompt: str) -> dict:
@@ -33,11 +34,15 @@ def do_chat(context: dict, dir: str, prompt: str) -> dict:
             "openai_api_key": context['openai_api_key'],
             "openai_api_base": context['openai_api_base'],
             "openai_api_model": context['openai_api_model'],
+            "user_email": context['benchmark_user_email'],
         },
-        timeout=300,
+        timeout=600,
     )
-    response.raise_for_status()
-    res_json = response.json()
-    if not res_json.get("success"):
-        raise Exception(f"Chat failed: {res_json}")
+
+    try:
+        res_json = response.json()
+        if not res_json.get("success"):
+            raise Exception(f"Chat failed: {res_json}")
+    except Exception as e:
+        raise Exception(f"Chat failed: {e}")
     return res_json["data"]
