@@ -22,8 +22,8 @@ export default function PDFView() {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(pdfPreviewPageRef.current);
 
-  const scrollTargetRef = useRef<number | null>(null);
-  const pendingScrollRef = useRef<number | null>(null);
+  const scrollToPageRef = useRef<number | null>(null);
+  const [scrollPending, setScrollPending] = useState(false);
   const pageWrapperRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // PDF.js transfers `data.buffer` to the worker, detaching it. A memoized `{ data: slice() }`
@@ -51,7 +51,7 @@ export default function PDFView() {
     const ro = new ResizeObserver(() => {
       clearTimeout(timer);
       timer = setTimeout(() => {
-        pendingScrollRef.current = pdfPreviewPageRef.current;
+        scrollToPageRef.current = pdfPreviewPageRef.current;
         setContainerWidth(el.clientWidth);
       }, 100);
     });
@@ -63,27 +63,20 @@ export default function PDFView() {
   }, [pdf]);
 
   useEffect(() => {
-    scrollTargetRef.current = pdfPreviewPageRef.current;
+    const target = pdfPreviewPageRef.current;
+    scrollToPageRef.current = target;
+    setScrollPending(target > 1);
     setNumPages(null);
-    setCurrentPage(pdfPreviewPageRef.current);
+    setCurrentPage(target);
   }, [pdf]);
 
-  useEffect(() => {
-    if (numPages === null) return;
-    const target = scrollTargetRef.current;
-    scrollTargetRef.current = null;
-    if (target !== null && target <= numPages) {
-      pendingScrollRef.current = target;
-    } else {
-      pendingScrollRef.current = null;
-      containerRef.current?.scrollTo({ top: 0, behavior: "instant" });
-    }
-  }, [numPages]);
-
   const handlePageRender = useCallback((pageNumber: number) => {
-    if (pendingScrollRef.current === pageNumber) {
-      pendingScrollRef.current = null;
-      pageWrapperRefs.current[pageNumber - 1]?.scrollIntoView({ behavior: "instant" });
+    if (scrollToPageRef.current === pageNumber) {
+      scrollToPageRef.current = null;
+      pageWrapperRefs.current[pageNumber - 1]?.scrollIntoView({
+        behavior: "instant",
+      });
+      setScrollPending(false);
     }
   }, []);
 
@@ -122,6 +115,13 @@ export default function PDFView() {
 
   const onDocumentLoadSuccess = useCallback((doc: { numPages: number }) => {
     setNumPages(doc.numPages);
+    if (
+      scrollToPageRef.current !== null &&
+      scrollToPageRef.current > doc.numPages
+    ) {
+      scrollToPageRef.current = null;
+      setScrollPending(false);
+    }
   }, []);
 
   if (!pdf || !pdfBlobUrl) {
@@ -141,25 +141,39 @@ export default function PDFView() {
 
   const pageWidth =
     containerWidth !== undefined && containerWidth > 0
-      ? Math.max(containerWidth - 16, 1)
+      ? Math.max((containerWidth - 40) * 0.92, 1)
       : 0;
 
   return (
     <div className="relative h-full min-h-0 w-full">
-      {numPages !== null && (
+      {numPages !== null && !scrollPending && (
         <PdfPageIndicator currentPage={currentPage} totalPages={numPages} />
+      )}
+      {scrollPending && (
+        <div className="bg-background absolute inset-0 z-10 flex items-center justify-center">
+          <div className="text-muted-foreground flex items-center gap-2">
+            <span
+              className="size-5 animate-spin rounded-full border-2 border-current border-t-transparent"
+              aria-hidden
+            />
+            <span>Loading PDF…</span>
+          </div>
+        </div>
       )}
       <div
         ref={containerRef}
         className="bg-muted/30 h-full w-full overflow-auto"
       >
-        <div className="flex flex-col items-center gap-2 p-2">
+        <div className="flex flex-col items-center gap-2 px-8 py-2">
           <Document
             className="flex flex-col items-center gap-2"
             file={pdfBlobUrl}
             loading={
               <div className="text-muted-foreground flex min-h-[200px] items-center gap-2">
-                <span className="size-5 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />
+                <span
+                  className="size-5 animate-spin rounded-full border-2 border-current border-t-transparent"
+                  aria-hidden
+                />
                 <span>Loading PDF...</span>
               </div>
             }
@@ -171,7 +185,9 @@ export default function PDFView() {
                 <div
                   key={i + 1}
                   data-page={i + 1}
-                  ref={(el) => { pageWrapperRefs.current[i] = el; }}
+                  ref={(el) => {
+                    pageWrapperRefs.current[i] = el;
+                  }}
                 >
                   <Page
                     className="shadow-sm"

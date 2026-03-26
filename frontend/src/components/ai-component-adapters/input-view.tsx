@@ -38,7 +38,7 @@ function AdaptedInputView(props: CopilotChatInputProps) {
       onSubmit={(prompt) => onSubmitMessage?.(prompt.text)}
     >
       <PromptInputBody>
-        <PromptInputTextarea />
+        <PromptInputTextarea placeholder="What can I help you with?" />
       </PromptInputBody>
       <PromptInputFooter>
         <PromptInputSubmit status={status} onStop={onStop} />

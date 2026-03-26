@@ -195,6 +195,12 @@
   --tw-gradient-via: var(--background) !important;
 }
 
+/* CopilotKit v2 uses prefixed utilities (cpk:bg-gradient-to-t + dark:from-[rgb(33,33,33)]); override those too */
+.dark [data-copilotkit] .cpk\:bg-gradient-to-t {
+  --tw-gradient-from: var(--background) !important;
+  --tw-gradient-via: var(--background) !important;
+}
+
 /* CopilotKit chat layout tweaks */
 .copilotKitMessages,
 [data-testid="copilot-message-list"] {
