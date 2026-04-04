@@ -28,7 +28,17 @@ def load_manifest() -> Dict[str, Any]:
         return json.loads(manifest_path.read_text(encoding='utf-8'))
 
 
-def load_template(template: str) -> Dict[str, str]:
+def _collect_template_files(template_root: Path) -> Dict[str, bytes]:
+    """Map posix relative paths (from template root) to raw file bytes."""
+    files: Dict[str, bytes] = {}
+    for file_path in template_root.rglob("*"):
+        if file_path.is_file():
+            rel = file_path.relative_to(template_root)
+            files[rel.as_posix()] = file_path.read_bytes()
+    return files
+
+
+def load_template(template: str) -> Dict[str, bytes]:
     try:
         template_ref = importlib.resources.files(
             "core.project.templates") / template
@@ -38,12 +48,7 @@ def load_template(template: str) -> Dict[str, str]:
         if not template_path.exists():
             raise FileNotFoundError(f"Template '{template}' not found")
 
-        files = {}
-        for file_path in template_path.iterdir():
-            if file_path.is_file():
-                files[file_path.name] = file_path.read_text(encoding='utf-8')
-
-        return files
+        return _collect_template_files(template_path)
     except (AttributeError, ModuleNotFoundError, TypeError) as e:
         # Fallback for frozen PyInstaller or development
         if getattr(sys, 'frozen', False):
@@ -58,12 +63,7 @@ def load_template(template: str) -> Dict[str, str]:
         if not template_path.exists():
             raise FileNotFoundError(f"Template '{template}' not found") from e
 
-        files = {}
-        for file_path in template_path.iterdir():
-            if file_path.is_file():
-                files[file_path.name] = file_path.read_text(encoding='utf-8')
-
-        return files
+        return _collect_template_files(template_path)
 
 
 def create_project(path: Path, template: str) -> None:
@@ -73,9 +73,10 @@ def create_project(path: Path, template: str) -> None:
     template_files = load_template(template)
 
     path.mkdir(parents=True, exist_ok=True)
-    for filename, content in template_files.items():
-        target_path = path / filename
-        target_path.write_text(content, encoding='utf-8')
+    for relative_path, content in template_files.items():
+        target_path = path / relative_path
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        target_path.write_bytes(content)
         # click.echo(f"  + Created {filename}")
 
     # click.echo(f"+ Project initialized successfully!")
