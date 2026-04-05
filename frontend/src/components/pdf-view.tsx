@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
+import { useAccessibility } from "@/contexts/accessibility-context";
 import { useEditor } from "@/contexts/editor-context";
 import PdfPageIndicator from "@/components/pdf-page-indicator";
+import { PdfZoomButtonGroup } from "@/components/pdf-zoom-button-group";
 
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -14,6 +16,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 const MAIN_PDF = "main.pdf" as const;
 
 export default function PDFView() {
+  const { pdfZoomPercent } = useAccessibility();
   const { pdf, files, pdfPreviewPageRef } = useEditor();
   const mainPdfExists = useMemo(() => files.includes(MAIN_PDF), [files]);
 
@@ -139,15 +142,21 @@ export default function PDFView() {
     );
   }
 
-  const pageWidth =
+  const basePageWidth =
     containerWidth !== undefined && containerWidth > 0
       ? Math.max((containerWidth - 40) * 0.92, 1)
       : 0;
+  const pageWidth = basePageWidth > 0 ? (basePageWidth * pdfZoomPercent) / 100 : 0;
 
   return (
     <div className="relative h-full min-h-0 w-full">
       {numPages !== null && !scrollPending && (
-        <PdfPageIndicator currentPage={currentPage} totalPages={numPages} />
+        <div className="absolute right-2 top-2 z-10 flex items-center gap-2">
+          <div className="w-fit shrink-0 overflow-hidden rounded-md bg-background/85 backdrop-blur-sm">
+            <PdfZoomButtonGroup compact />
+          </div>
+          <PdfPageIndicator currentPage={currentPage} totalPages={numPages} />
+        </div>
       )}
       {scrollPending && (
         <div className="bg-background absolute inset-0 z-10 flex items-center justify-center">

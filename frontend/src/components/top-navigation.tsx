@@ -3,7 +3,7 @@ import { ArrowLeft, HelpCircle, Settings, Moon, Sun, Play } from "lucide-react";
 import BrandLogo from "./brand-logo";
 import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect } from "react";
-import SettingsMenu from "./settings-menu";
+import AccessibilityMenu from "./accessibility-menu";
 import { useTheme } from "@/contexts/theme-context";
 
 interface TopNavigationProps {
@@ -19,8 +19,8 @@ export default function TopNavigation({ activeTab, onTabChange, onCompile, canCo
   const { isDark, toggleTheme } = useTheme();
   const isSettingsPage = location.pathname === "/settings";
   const [isCompiling, setIsCompiling] = useState(false);
-  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
-  const settingsMenuRef = useRef<HTMLDivElement>(null);
+  const [showAccessibilityMenu, setShowAccessibilityMenu] = useState(false);
+  const accessibilityMenuRef = useRef<HTMLDivElement>(null);
   const helpButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleCompile = async () => {
@@ -36,20 +36,20 @@ export default function TopNavigation({ activeTab, onTabChange, onCompile, canCo
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        settingsMenuRef.current &&
-        !settingsMenuRef.current.contains(event.target as Node) &&
+        accessibilityMenuRef.current &&
+        !accessibilityMenuRef.current.contains(event.target as Node) &&
         helpButtonRef.current &&
         !helpButtonRef.current.contains(event.target as Node)
       ) {
-        setShowSettingsMenu(false);
+        setShowAccessibilityMenu(false);
       }
     };
 
-    if (showSettingsMenu) {
+    if (showAccessibilityMenu) {
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }
-  }, [showSettingsMenu]);
+  }, [showAccessibilityMenu]);
 
   return (
     <div className="h-12 border-b bg-background flex items-center justify-between px-4">
@@ -109,14 +109,21 @@ export default function TopNavigation({ activeTab, onTabChange, onCompile, canCo
             variant="ghost"
             size="icon"
             className="h-8 w-8 cursor-pointer"
-            title="Help"
-            onClick={() => setShowSettingsMenu(!showSettingsMenu)}
+            title="Accessibility"
+            onClick={() =>
+              setShowAccessibilityMenu(!showAccessibilityMenu)
+            }
           >
             <HelpCircle className="h-4 w-4" />
           </Button>
-          {showSettingsMenu && (
-            <div ref={settingsMenuRef} className="absolute right-0 top-10 z-50">
-              <SettingsMenu onClose={() => setShowSettingsMenu(false)} />
+          {showAccessibilityMenu && (
+            <div
+              ref={accessibilityMenuRef}
+              className="absolute right-0 top-10 z-50 max-h-[min(85vh,calc(100vh-3rem))] overflow-y-auto overflow-x-hidden"
+            >
+              <AccessibilityMenu
+                onClose={() => setShowAccessibilityMenu(false)}
+              />
             </div>
           )}
         </div>

@@ -14,7 +14,7 @@ export default function PdfPageIndicator({
 }: PdfPageIndicatorProps) {
   return (
     <div
-      className={`pointer-events-none absolute right-2 top-2 z-10 select-none rounded-md border border-border/60 bg-background/85 px-2.5 py-1 text-xs font-medium tabular-nums text-muted-foreground shadow-sm backdrop-blur-sm ${className}`}
+      className={`select-none rounded-md border border-border/60 bg-background/85 px-2.5 py-1 text-xs font-medium tabular-nums text-muted-foreground shadow-sm backdrop-blur-sm ${className}`}
       aria-live="polite"
       aria-label={`PDF page ${currentPage} of ${totalPages}`}
     >

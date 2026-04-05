@@ -1,6 +1,15 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
 type TextSize = "small" | "medium" | "large";
+
+export const PDF_ZOOM_MIN = 50;
+export const PDF_ZOOM_MAX = 300;
+export const PDF_ZOOM_DEFAULT = 100;
+export const PDF_ZOOM_STEP = 10;
+
+function clampPdfZoomPercent(value: number): number {
+  return Math.min(PDF_ZOOM_MAX, Math.max(PDF_ZOOM_MIN, Math.round(value)));
+}
 
 interface AccessibilityContextValue {
   textSize: TextSize;
@@ -11,6 +20,9 @@ interface AccessibilityContextValue {
   toggleScreenReader: () => void;
   magnifier: boolean;
   toggleMagnifier: () => void;
+  pdfZoomPercent: number;
+  setPdfZoomPercent: (value: number) => void;
+  stepPdfZoom: (delta: number) => void;
 }
 
 const AccessibilityContext = createContext<AccessibilityContextValue | null>(null);
@@ -70,6 +82,21 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
     return false;
   });
 
+  const [pdfZoomPercent, setPdfZoomPercentState] = useState<number>(() => {
+    const stored = localStorage.getItem(ACCESSIBILITY_STORAGE_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (typeof parsed.pdfZoomPercent === "number") {
+          return clampPdfZoomPercent(parsed.pdfZoomPercent);
+        }
+      } catch {
+        /* fall through */
+      }
+    }
+    return PDF_ZOOM_DEFAULT;
+  });
+
   const setTextSize = (size: TextSize) => {
     setTextSizeState(size);
     const root = document.documentElement;
@@ -97,6 +124,14 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
     setMagnifier((prev) => !prev);
   };
 
+  const setPdfZoomPercent = useCallback((value: number) => {
+    setPdfZoomPercentState(clampPdfZoomPercent(value));
+  }, []);
+
+  const stepPdfZoom = useCallback((delta: number) => {
+    setPdfZoomPercentState((prev) => clampPdfZoomPercent(prev + delta));
+  }, []);
+
   // Save to localStorage whenever settings change
   useEffect(() => {
     const settings = {
@@ -104,9 +139,10 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
       highContrast,
       screenReader,
       magnifier,
+      pdfZoomPercent,
     };
     localStorage.setItem(ACCESSIBILITY_STORAGE_KEY, JSON.stringify(settings));
-  }, [textSize, highContrast, screenReader, magnifier]);
+  }, [textSize, highContrast, screenReader, magnifier, pdfZoomPercent]);
 
   // Apply initial settings
   useEffect(() => {
@@ -138,6 +174,9 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
         toggleScreenReader,
         magnifier,
         toggleMagnifier,
+        pdfZoomPercent,
+        setPdfZoomPercent,
+        stepPdfZoom,
       }}
     >
       {children}
