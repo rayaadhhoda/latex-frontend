@@ -5,14 +5,54 @@ Two additional modules serve to test the agent and document the application.
 
 \subsection{Frontend}
 
+Spartan Write's frontend is built with React.js \cite{react} on Tauri, enabling cross-platform development of native desktop applications for macOS, Windows, and Linux from a single TypeScript/React codebase \cite{tauri}.
+
+\subsubsection{Development tooling and libraries}
+
+The frontend leverages modern development tooling to ensure productivity and maintainability while maximizing accessiblity.
+
 \begin{itemize}
-    \item Built using React on the Tauri platform.
-    \item Provides powerful interface development tools.
-    \item Also provides seamless and lightweight cross-platform native application deployment.
-    \item Focus on accessibility and ease of use.
-    \item Performs user authentication with an external provider.
+    \item Tauri provides seamless integration with native system APIs while minimizing binary size, making it ideal for resource-conscious deployment across diverse user environments \cite{tauri}.
+    \item Vite powers fast build times and hot module reloading during development, as well as a lightweight packaging pipeline \cite{vite}.
+    \item TypeScript provides type safety across the codebase \cite{typescript}.
+    \item Styling is handled by Tailwind CSS for responsive, utility-first design \cite{tailwind}.
+    \item User interface components are derived from shadcn, a plug-and-play component library designed with accessibility, extensibility, and consistent visual design in mind \cite{shadcn}.
+    \item The source code editor implements the Monaco Editor, which provides syntax-aware code editing with support for \LaTeX\ and other file formats \cite{monaco}.
 \end{itemize}
 
+\subsubsection{Agentic AI chat integration}
+
+A key feature of the frontend is its integration with CopilotKit, which enables agentic chat directly within the editor \cite{copilotkit}.
+The agentic chat system supports tool use for file operations, \LaTeX\ compilation, and image handling.
+This tight integration allows users to request document modifications conversationally without leaving the editor.
+
+\subsubsection{Dual-mode editor layout}
+
+The editor employs a resizable split-panel layout that supports two complementary viewing modes.
+In \emph{source view}, users see a syntax-highlighted code editor alongside a file browser for project navigation.
+In \emph{preview view}, which is the default view, users see a live PDF rendering of their compiled document.
+This dual-mode design provides immediate visual feedback and allows users to verify that AI-generated changes produce the desired output.
+
+\subsubsection{Accessible interface}
+
+Accessibility is a core design principle.
+The interface includes configurable text sizing to accommodate users with vision impairments, screen reader support with live region announcements for screen reader users, a magnifier mode for enhanced visibility, and customizable PDF zoom levels ranging from 50\% to 300\%.
+
+\subsubsection{Authentication}
+
+The frontend integrates WorkOS AuthKit to provide secure, standards-based authentication \cite{workos}.
+Users sign in via an external browser or through OAuth deeplinks, and the system manages JWT-based token refresh to maintain active sessions.
+The authentication flow is designed to be seamless while adhering to security best practices.
+Once authenticated, the frontend manages user credentials and provides visualization of usage data and costs.
+
+\subsubsection{Project management}
+
+The frontend provides a comprehensive project management interface.
+Users access a dashboard to view and open recent projects.
+There is an onboarding flow for new users, and a settings page displaying user profile information and usage analytics.
+Native file dialogs (via Tauri plugins) allow users to select or create projects directly from the filesystem.
+
+% TODO
 \subsection{Sidecar}
 
 \begin{itemize}
