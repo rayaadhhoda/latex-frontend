@@ -80,7 +80,11 @@ export function EditorProvider({ dir, children }: EditorProviderProps) {
           setCompileError(response.detail || "Failed to compile PDF");
         }
       } else {
-        const ignoredPrefixes = ["warning:", "Invalid UTF-8 byte or sequence"];
+        const ignoredPrefixes = [
+          "warning:",
+          "Invalid UTF-8 byte or sequence",
+          "Requested font",
+        ];
         const filteredStderr = stderr
           ?.split("\n")
           .filter((line) => !ignoredPrefixes.some((prefix) => line.startsWith(prefix)))
