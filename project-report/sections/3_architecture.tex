@@ -3,6 +3,14 @@
 The application is structured into three modules.
 Two additional modules serve to test the agent and document the application.
 
+\begin{itemize}
+    \item Frontend
+    \item Sidecar
+    \item Server
+    \item User guide
+    \item Benchmark
+\end{itemize}
+
 \subsection{Frontend}
 
 Spartan Write's frontend is built with React.js \cite{react} on Tauri, enabling cross-platform development of native desktop applications for macOS, Windows, and Linux from a single TypeScript/React codebase \cite{tauri}.
@@ -52,14 +60,56 @@ Users access a dashboard to view and open recent projects.
 There is an onboarding flow for new users, and a settings page displaying user profile information and usage analytics.
 Native file dialogs (via Tauri plugins) allow users to select or create projects directly from the filesystem.
 
-% TODO
+
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\linewidth]{figures/architecture.excalidraw.png}
+    \caption{Architecture of the Spartan Write system}
+    \label{fig:architecture}
+\end{figure}
+
 \subsection{Sidecar}
 
-\begin{itemize}
-    \item Frontend is packaged along with a Python FastAPI server that will run alongside the application on the user's device.
-    \item This server contains all of the logic to interact with the local file system.
-    \item This allows headless usage of the application via HTTP.
-\end{itemize}
+The sidecar is a local FastAPI server bundled with the desktop application that serves as the bridge between the frontend UI and the project filesystem.
+Unlike most "servers", this program runs on the users' devices alongside the client application.
+Its primary responsibility is to handle all local filesystem operations, thus keeping the cloud server stateless and focused purely on AI agent logic.
+
+\subsubsection{Project and File Management}
+
+The sidecar manages the complete project lifecycle on the user's machine.
+The sidecar maintains a list of curated \LaTeX\ templates from which the user selects.
+Then, the program scaffolds the directory structure with the source code associated with the template.
+Once a project is open, the sidecar exposes endpoints for all file operations: reading, writing, deleting, and renaming files within the project directory.
+This abstraction layer ensures the frontend can safely interact with the filesystem through a controlled, authenticated API rather than direct file access.
+
+\subsubsection{Compilation and PDF Rendering}
+
+A critical function of the sidecar is local \LaTeX\ compilation.
+For this purpose, it uses Tectonic \cite{tectonic}, a lightweight \LaTeX\ compiler to compile the project.
+The sidecar abstracts this program behind a convenient API that returns the compilation status and error messages to the frontend.
+The compiled PDF is served back to the frontend for live preview.
+The Tectonic binary is bundled alongside the sidecar itself as part of the frontend application.
+This local compilation strategy facilitates fast feedback loops and offline compilation capability without reliance on cloud-based typesetting services.
+
+\subsubsection{Image and Configuration Management}
+
+The sidecar handles image workflows by accepting uploads from the frontend, storing them temporarily, and exposing endpoints to move images into the project's \texttt{figures/} directory for seamless inclusion in documents. Additionally, it manages project-specific and user-level configuration, including user information, OpenAI API credentials, and WorkOS authentication tokens, persisting these settings locally for quick access and offline operation.
+
+\subsubsection{Settings, Health, and Lifecycle}
+
+The Sidecar provides settings management and first-run onboarding logic, allowing users to configure their preferences and API keys. It exposes health check endpoints so the frontend can verify that the service is running and responsive. To ensure resource efficiency, the Sidecar implements parent process monitoring: if the parent desktop application terminates, the Sidecar automatically exits, preventing orphaned processes. In cases where users need a fresh start, the Sidecar offers a ``nuke'' endpoint to reset all local state and configuration.
+
+\subsubsection{Template Discovery}
+
+The Sidecar provides a \texttt{/templates} endpoint that lists available project templates, enabling the frontend to present users with choices when creating new projects. This allows for easy extensibility: new templates can be added to the Sidecar without requiring frontend changes.
+
+In summary, the Sidecar encapsulates all local, filesystem-bound operations, compilation, and configuration management. By handling these responsibilities locally, the Sidecar enables offline-first workflows, fast feedback, and keeps the cloud Server lightweight and stateless---focused solely on running the AI agent and managing user authentication and analytics.
+
+
+
+
+
 
 \subsection{Agent}
 
