@@ -28,8 +28,8 @@ FRONTEND_DIR = ROOT / "frontend"
 SIDECAR_BIN_DIR = FRONTEND_DIR / "src-tauri" / "bin"
 
 # Tectonic binary download
-TECTONIC_VERSION = "0.15.0+20251006"
-TECTONIC_RELEASE_URL = "https://github.com/tectonic-typesetting/tectonic/releases/download/continuous"
+TECTONIC_VERSION = "0.16.8"
+TECTONIC_RELEASE_URL = f"https://github.com/tectonic-typesetting/tectonic/releases/download/tectonic%40{TECTONIC_VERSION}"
 
 
 def get_target_triple() -> str:
