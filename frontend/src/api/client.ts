@@ -133,6 +133,21 @@ export async function uploadImage(
   });
 }
 
+export async function uploadImageData(
+  payload: {
+    original_filename: string;
+    media_type: string;
+    image_base64: string;
+  },
+  options?: RequestInit,
+): Promise<ApiResponse<UploadImageData>> {
+  return request(API_ENDPOINTS.UPLOAD_IMAGE_DATA, {
+    method: "POST",
+    body: JSON.stringify(payload),
+    ...options,
+  });
+}
+
 export async function removeUploadedImage(
   uploadedPath: string,
   options?: RequestInit,

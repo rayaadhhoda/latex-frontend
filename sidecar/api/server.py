@@ -1,3 +1,4 @@
+import base64
 import os
 from pathlib import Path
 import sys
@@ -63,6 +64,12 @@ class UpdateFileContentRequest(BaseModel):
 
 class UploadImageRequest(BaseModel):
     selected_path: str
+
+
+class UploadImageDataRequest(BaseModel):
+    original_filename: str
+    media_type: str = "application/octet-stream"
+    image_base64: str
 
 
 class RemoveUploadedImageRequest(BaseModel):
@@ -189,6 +196,34 @@ async def upload_image(request: UploadImageRequest):
         original_filename, saved_filename, path, image_bytes = project.image.store_uploaded_image(
             request.selected_path)
 
+        return {
+            "success": True,
+            "data": {
+                "original_filename": original_filename,
+                "saved_filename": saved_filename,
+                "path": path,
+                "image_bytes": image_bytes,
+            },
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/upload-image-data")
+async def upload_image_data(request: UploadImageDataRequest):
+    try:
+        raw = base64.b64decode(request.image_base64, validate=True)
+        if len(raw) > 25 * 1024 * 1024:
+            raise ValueError("Image exceeds maximum size (25MB)")
+        original_filename, saved_filename, path, image_bytes = (
+            project.image.store_uploaded_image_bytes(
+                request.original_filename, raw
+            )
+        )
         return {
             "success": True,
             "data": {

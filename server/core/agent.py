@@ -1,8 +1,10 @@
+import base64
+import mimetypes
 from pathlib import Path
 from textwrap import dedent
 
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import AIMessage, SystemMessage, ToolMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
@@ -38,9 +40,10 @@ SYSTEM_PROMPT = dedent(
         - Always be careful to preserve LaTeX syntax and formatting.
         - When editing files, provide the complete file content, not just the changed sections.
 
-        # Figure Handling
-        - If the user asks you to add a figure, you should use the move_attached_image_to_project tool to move it to the project's figures directory, then cite it in the right location.
-        - If the user instead asks a question about the figure, you should use the read_attached_image_tool to read the image and then answer the question based on the image.
+        # Image attachments
+        - When the user wants an attached image to become part of the LaTeX project (figure, appendix image, etc.), use the move_attached_image_to_project tool to place it under figures/, then add or update \\includegraphics and related LaTeX in the right file(s).
+        - When the user wants information taken from an attached image (describe it, transcribe text, answer what it shows, extract a table, etc.), answer using the image as it appears in the conversation (vision). Do not use a tool to "load" the image for that purpose.
+        - If it is unclear whether they want the image saved into the project or only analyzed, ask a brief clarifying question before moving files or editing the document structure.
 
         # Integrity Checks
         You must always aim to make minimal changes to the project. Do not add content that is not provided by the user.
@@ -210,18 +213,6 @@ FRONTEND_TOOL_SCHEMAS: list[dict] = [
             },
         },
     },
-    # {
-    #     "type": "function",
-    #     "function": {
-    #         "name": "read_attached_image_tool",
-    #         "description":
-    #         "Read the currently attached image and return its base64-encoded bytes.",
-    #         "parameters": {
-    #             "type": "object",
-    #             "properties": {}
-    #         },
-    #     },
-    # },
     {
         "type": "function",
         "function": {
@@ -235,6 +226,83 @@ FRONTEND_TOOL_SCHEMAS: list[dict] = [
         },
     },
 ]
+
+
+def _content_has_image_url_block(content: object) -> bool:
+    if not isinstance(content, list):
+        return False
+    for block in content:
+        if isinstance(block, dict) and block.get("type") == "image_url":
+            return True
+    return False
+
+
+def _data_url_for_image_file(path: Path) -> str | None:
+    try:
+        raw = path.read_bytes()
+    except OSError:
+        return None
+    mime, _ = mimetypes.guess_type(str(path))
+    if not mime or not mime.startswith("image/"):
+        ext = path.suffix.lower()
+        fallback = {
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".gif": "image/gif",
+            ".webp": "image/webp",
+            ".bmp": "image/bmp",
+            ".svg": "image/svg+xml",
+        }
+        mime = fallback.get(ext, "image/png")
+    b64 = base64.b64encode(raw).decode("ascii")
+    return f"data:{mime};base64,{b64}"
+
+
+def _inject_attached_image_into_messages(
+    messages: list[BaseMessage],
+    attached_image_path: str | None,
+) -> list[BaseMessage]:
+    """Append vision input for the staged attachment to the latest HumanMessage."""
+    if not attached_image_path:
+        return messages
+    path = Path(attached_image_path)
+    if not path.is_file():
+        return messages
+    data_url = _data_url_for_image_file(path)
+    if not data_url:
+        return messages
+
+    out = list(messages)
+    for i in range(len(out) - 1, -1, -1):
+        msg = out[i]
+        if not isinstance(msg, HumanMessage):
+            continue
+        if _content_has_image_url_block(msg.content):
+            break
+        image_block: dict = {
+            "type": "image_url",
+            "image_url": {"url": data_url},
+        }
+        content = msg.content
+        if isinstance(content, str):
+            new_content: list | str = [
+                {"type": "text", "text": content},
+                image_block,
+            ]
+        elif isinstance(content, list):
+            new_content = list(content) + [image_block]
+        else:
+            new_content = [
+                {"type": "text", "text": str(content)},
+                image_block,
+            ]
+        if hasattr(msg, "model_copy"):
+            out[i] = msg.model_copy(update={"content": new_content})
+        else:
+            out[i] = HumanMessage(content=new_content)
+        break
+    return out
 
 
 def create_graph(creds: AgentCreds,
@@ -257,7 +325,9 @@ def create_graph(creds: AgentCreds,
         model_with_tools = model.bind_tools(FRONTEND_TOOL_SCHEMAS)
 
     def call_model(state: CopilotKitState):
-        messages = [SystemMessage(content=SYSTEM_PROMPT)] + state["messages"]
+        augmented = _inject_attached_image_into_messages(
+            state["messages"], attached_image_path)
+        messages = [SystemMessage(content=SYSTEM_PROMPT)] + augmented
         return {
             "messages": [
                 model_with_tools.invoke(

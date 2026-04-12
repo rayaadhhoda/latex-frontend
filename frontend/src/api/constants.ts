@@ -12,6 +12,7 @@ export const API_ENDPOINTS = {
   COMPILE: "/compile",
   CHAT: "/chat",
   UPLOAD_IMAGE: "/upload-image",
+  UPLOAD_IMAGE_DATA: "/upload-image-data",
   FILES: "/files",
   FILES_CONTENT: "/files/content",
   FILES_RENAME: "/files/rename",

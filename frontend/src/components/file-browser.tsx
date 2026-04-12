@@ -1,12 +1,15 @@
 import { useMemo, useCallback } from "react";
 import { Folder, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { deleteFile, renameFile } from "@/api/client";
 import { useEditor } from "@/contexts/editor-context";
 import { Button } from "@/components/ui/button";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import {
@@ -51,12 +54,51 @@ function buildTree(files: string[]): TreeNode {
 }
 
 function RenderFile({ filePath, disabled }: { filePath: string; disabled?: boolean }) {
-  const { dir } = useEditor();
+  const { dir, refreshFiles, notifyFileDeleted, notifyFileRenamed } = useEditor();
   const fileName = filePath.split("/").pop() || filePath;
 
   const handleRevealInFinder = () => {
     if (dir) {
       revealItemInDir(`${dir}/${filePath}`);
+    }
+  };
+
+  const handleRename = async () => {
+    if (!dir || disabled) return;
+    const parent = filePath.includes("/")
+      ? filePath.slice(0, filePath.lastIndexOf("/"))
+      : "";
+    const newName = window.prompt("New file name:", fileName);
+    if (newName === null) return;
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === fileName) return;
+    if (trimmed.includes("/") || trimmed.includes("\\")) {
+      toast.error("Name cannot contain path separators.");
+      return;
+    }
+    const newPath = parent ? `${parent}/${trimmed}` : trimmed;
+    try {
+      await renameFile(dir, filePath, newPath);
+      notifyFileRenamed(filePath, newPath);
+      await refreshFiles();
+      toast.success("File renamed");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to rename file");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!dir || disabled) return;
+    if (!window.confirm(`Delete "${fileName}"? This cannot be undone.`)) {
+      return;
+    }
+    try {
+      await deleteFile(dir, filePath);
+      notifyFileDeleted(filePath);
+      await refreshFiles();
+      toast.success("File deleted");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete file");
     }
   };
 
@@ -71,9 +113,20 @@ function RenderFile({ filePath, disabled }: { filePath: string; disabled?: boole
         />
       </ContextMenuTrigger>
       <ContextMenuContent>
-        <ContextMenuItem onSelect={handleRevealInFinder}>
+        <ContextMenuItem onSelect={handleRevealInFinder} disabled={!dir}>
           Reveal in Finder
         </ContextMenuItem>
+        {!disabled && (
+          <>
+            <ContextMenuSeparator />
+            <ContextMenuItem onSelect={handleRename} disabled={!dir}>
+              Rename…
+            </ContextMenuItem>
+            <ContextMenuItem variant="destructive" onSelect={handleDelete} disabled={!dir}>
+              Delete
+            </ContextMenuItem>
+          </>
+        )}
       </ContextMenuContent>
     </ContextMenu>
   );

@@ -37,18 +37,25 @@ def store_uploaded_image(selected_path: str) -> tuple[str, str, str, str]:
     if not source.exists() or not source.is_file():
         raise ValueError(f"Invalid image path: {selected_path}")
 
-    temp_dir = user_runtime_path(appname="spartan-write", ensure_exists=True)
-    original_filename = source.name
-    file_path = temp_dir / f"{uuid.uuid4().hex}-{original_filename}"
-
     with source.open("rb") as source_file:
         image_bytes = source_file.read()
+
+    return store_uploaded_image_bytes(source.name, image_bytes)
+
+
+def store_uploaded_image_bytes(
+    original_filename: str, image_bytes: bytes
+) -> tuple[str, str, str, str]:
+    """Store raw image bytes in the app runtime temp dir."""
+    temp_dir = user_runtime_path(appname="spartan-write", ensure_exists=True)
+    safe_name = Path(original_filename).name or "image"
+    file_path = temp_dir / f"{uuid.uuid4().hex}-{safe_name}"
 
     with file_path.open("wb") as destination:
         destination.write(image_bytes)
 
     image_bytes_b64 = base64.b64encode(image_bytes).decode("ascii")
-    return original_filename, file_path.name, str(file_path), image_bytes_b64
+    return safe_name, file_path.name, str(file_path), image_bytes_b64
 
 
 def get_uploaded_image_bytes_b64(uploaded_path: str) -> str:

@@ -1,4 +1,3 @@
-import base64
 import shutil
 import subprocess
 from pathlib import Path
@@ -152,18 +151,6 @@ def create_local_tools(folder_path: Path, attached_image_path: str | None):
             return f"Error compiling: {str(e)}"
 
     @tool
-    def read_attached_image_tool() -> str:
-        """Read the currently attached image and return its base64-encoded bytes."""
-        if not attached_image_path:
-            return "Error: No image is currently attached."
-        try:
-            image_path = Path(attached_image_path)
-            image_bytes = image_path.read_bytes()
-            return base64.b64encode(image_bytes).decode("ascii")
-        except Exception as e:
-            return f"Error reading attached image: {str(e)}"
-
-    @tool
     def move_attached_image_to_project_tool() -> str:
         """Move the currently attached image into the project's figures directory."""
         if not attached_image_path:
@@ -190,6 +177,5 @@ def create_local_tools(folder_path: Path, attached_image_path: str | None):
         rename_file_tool,
         list_files_tool,
         compile_latex_tool,
-        read_attached_image_tool,
         move_attached_image_to_project_tool,
     ]

@@ -24,6 +24,10 @@ interface EditorContextValue {
   compileAndRefresh: () => Promise<void>;
   clearCompileError: () => void;
   pdfPreviewPageRef: React.RefObject<number>;
+  /** Call after a project file is removed via the sidecar (e.g. tree delete). */
+  notifyFileDeleted: (projectRelativePath: string) => void;
+  /** Call after a project file is renamed via the sidecar (e.g. tree rename). */
+  notifyFileRenamed: (fromPath: string, toPath: string) => void;
 }
 
 const EditorContext = createContext<EditorContextValue | null>(null);
@@ -150,6 +154,20 @@ export function EditorProvider({ dir, children }: EditorProviderProps) {
     }
   }, [dir, compilePDF]);
 
+  const notifyFileDeleted = useCallback((projectRelativePath: string) => {
+    setCurrentFile((prev) => {
+      if (prev === projectRelativePath) {
+        setFileContent(null);
+        return null;
+      }
+      return prev;
+    });
+  }, []);
+
+  const notifyFileRenamed = useCallback((fromPath: string, toPath: string) => {
+    setCurrentFile((prev) => (prev === fromPath ? toPath : prev));
+  }, []);
+
   useEffect(() => {
     pdfPreviewPageRef.current = 1;
   }, [dir]);
@@ -191,6 +209,8 @@ export function EditorProvider({ dir, children }: EditorProviderProps) {
     compileAndRefresh,
     clearCompileError: () => setCompileError(null),
     pdfPreviewPageRef,
+    notifyFileDeleted,
+    notifyFileRenamed,
   };
 
   return (
