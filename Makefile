@@ -35,7 +35,7 @@ run:
 #   make do-benchmark MODEL='qwen/qwen3.6-plus:free'
 # Extra goals are still appended for newer Make / other flags.
 do-benchmark:
-	@cd benchmark && uv run benchmark --dir temp run $(if $(MODEL),--model $(MODEL),) $(filter-out $@,$(MAKECMDGOALS))
+	@cd benchmark && uv run benchmark --dir temp run $(filter-out $@,$(MAKECMDGOALS))
 
 dashboard:
 	@cd benchmark && uv run dashboard --dir temp

@@ -6,6 +6,17 @@
 \ProcessOptions\relax
 \LoadClass[12pt, onecolumn, journal]{IEEEtran}
 
+% Decimal section numbering (3., 3.1., 3.1.1., …) in headings, refs, and ToC.
+% IEEEtran journal (non-compsoc) defaults to Roman / I-A style; override after load.
+\renewcommand{\thesection}{\arabic{section}.}
+\renewcommand{\thesubsection}{\thesection\arabic{subsection}.}
+\renewcommand{\thesubsubsection}{\thesubsection\arabic{subsubsection}.}
+\renewcommand{\theparagraph}{\thesubsubsection\arabic{paragraph}.}
+\renewcommand{\thesectiondis}{\thesection}
+\renewcommand{\thesubsectiondis}{\thesubsection}
+\renewcommand{\thesubsubsectiondis}{\thesubsubsection}
+\renewcommand{\theparagraphdis}{\theparagraph}
+
 % ==========================================
 % REQUIRED PACKAGES
 % ==========================================
