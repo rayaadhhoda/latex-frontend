@@ -37,6 +37,11 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface AccessibilityMenuProps {
   children: React.ReactNode;
@@ -104,7 +109,12 @@ export default function AccessibilityMenu({
 
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
-      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>{children}</PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Accessibility</TooltipContent>
+      </Tooltip>
       <PopoverContent
         align="end"
         sideOffset={8}
@@ -239,6 +249,7 @@ export default function AccessibilityMenu({
                   }`}
                   role="switch"
                   aria-checked={screenReader}
+                  aria-label="Toggle screen reader mode"
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -257,6 +268,7 @@ export default function AccessibilityMenu({
                   }`}
                   role="switch"
                   aria-checked={magnifier}
+                  aria-label="Toggle magnifier"
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${

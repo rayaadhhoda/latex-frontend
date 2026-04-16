@@ -262,7 +262,7 @@ def build_tauri_debug():
 def main():
     print("=== Spartan Write build script ===")
 
-    update_submodules()
+    # update_submodules()  # skipped: SSH key not configured locally
 
     target_triple = get_target_triple()
     print(f"+ Target triple: {target_triple}")

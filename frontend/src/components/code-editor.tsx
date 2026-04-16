@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Editor, { Monaco } from "@monaco-editor/react";
 import { useEditor } from "@/contexts/editor-context";
 import { useTheme } from "@/contexts/theme-context";
 import { useSettings } from "@/contexts/settings-context";
-import { Bold, Italic, Hash, Heading2, List, Quote } from "lucide-react";
+import { Bold, Italic, Hash, Heading2, List, Quote, Save, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CodeEditorProps {
   language?: string;
@@ -50,7 +51,7 @@ export default function CodeEditor({
     setLocalContent(value || "");
   };
 
-  const handleSaveClick = async () => {
+  const handleSaveClick = useCallback(async () => {
     if (!currentFile) return;
     try {
       setSaveStatus("saving");
@@ -62,7 +63,19 @@ export default function CodeEditor({
       console.error("Error saving file:", err);
       setSaveStatus("idle");
     }
-  };
+  }, [currentFile, localContent, saveFile]);
+
+  // Keyboard shortcut: Cmd+S / Ctrl+S
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault();
+        handleSaveClick();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleSaveClick]);
 
   const handleEditorWillMount = (monaco: Monaco) => {
     monaco.languages.register({ id: 'latex' });
@@ -212,74 +225,74 @@ export default function CodeEditor({
   }
 
   return (
+    <TooltipProvider delayDuration={600}>
     <div className="h-full flex flex-col">
       <div className="flex items-center gap-1 px-3 py-2 border-b bg-background">
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={formatBold}
-          className="h-7 w-7"
-          title="Bold"
-        >
-          <Bold className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={formatItalic}
-          className="h-7 w-7"
-          title="Italic"
-        >
-          <Italic className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={formatHeading}
-          className="h-7 w-7"
-          title="Section"
-        >
-          <Hash className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={formatSubheading}
-          className="h-7 w-7"
-          title="Subsection"
-        >
-          <Heading2 className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={formatList}
-          className="h-7 w-7"
-          title="List"
-        >
-          <List className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={formatQuote}
-          className="h-7 w-7"
-          title="Quote"
-        >
-          <Quote className="h-3.5 w-3.5" />
-        </Button>
+        {([
+          { label: "Bold — \\textbf{}", icon: Bold, action: formatBold },
+          { label: "Italic — \\textit{}", icon: Italic, action: formatItalic },
+          { label: "Section heading", icon: Hash, action: formatHeading },
+          { label: "Subsection heading", icon: Heading2, action: formatSubheading },
+          { label: "Itemize list", icon: List, action: formatList },
+          { label: "Block quote", icon: Quote, action: formatQuote },
+        ] as const).map(({ label, icon: Icon, action }) => (
+          <Tooltip key={label}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={action}
+                className="h-7 w-7"
+                aria-label={label}
+              >
+                <Icon className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">{label}</TooltipContent>
+          </Tooltip>
+        ))}
 
         <div className="ml-auto flex items-center gap-2">
-          <Button
-            size="xs"
-            variant="outline"
-            className="h-6 px-2 text-[10px] uppercase tracking-wide"
-            disabled={!currentFile || saveStatus === "saving"}
-            onClick={handleSaveClick}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                variant={saveStatus === "saved" ? "default" : "outline"}
+                className={`h-7 gap-1.5 px-3 text-xs transition-all ${
+                  saveStatus === "saved"
+                    ? "bg-green-600 hover:bg-green-700 text-white border-transparent"
+                    : ""
+                }`}
+                disabled={!currentFile || saveStatus === "saving"}
+                onClick={handleSaveClick}
+                aria-label={
+                  saveStatus === "saving"
+                    ? "Saving file"
+                    : saveStatus === "saved"
+                    ? "File saved"
+                    : "Save file"
+                }
+              >
+                {saveStatus === "saved" ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <Save className="h-3.5 w-3.5" />
+                )}
+                {saveStatus === "saving"
+                  ? "Saving…"
+                  : saveStatus === "saved"
+                  ? "Saved"
+                  : "Save"}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {saveStatus === "saved" ? "Changes saved" : "Save file (⌘S / Ctrl+S)"}
+            </TooltipContent>
+          </Tooltip>
+          <div
+            className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider border rounded-full text-muted-foreground max-w-[180px] truncate"
+            title={currentFile || "No file"}
           >
-            {saveStatus === "saving" ? "Saving..." : "Save"}
-          </Button>
-          <div className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider border rounded-full text-muted-foreground">
             {currentFile || "No file"}
           </div>
         </div>
@@ -306,5 +319,6 @@ export default function CodeEditor({
       </div>
 
     </div>
+    </TooltipProvider>
   );
 }

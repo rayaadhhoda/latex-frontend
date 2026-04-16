@@ -1,0 +1,76 @@
+/**
+ * CopilotKit v2 sets [data-copilotkit]{ --background / --foreground / … } to its own neutrals
+ * and uses hardcoded dark grays on inputs and gradients. Re-align the chat subtree with the
+ * app theme (light + dark) via .ai-chat-panel (higher specificity than bare [data-copilotkit]).
+ */
+
+.ai-chat-panel {
+  --cpk-theme-bg: var(--background);
+  --cpk-theme-fg: var(--foreground);
+  --cpk-theme-card: var(--card);
+  --cpk-theme-card-fg: var(--card-foreground);
+  --cpk-theme-popover: var(--popover);
+  --cpk-theme-popover-fg: var(--popover-foreground);
+  --cpk-theme-primary: var(--primary);
+  --cpk-theme-primary-fg: var(--primary-foreground);
+  --cpk-theme-secondary: var(--secondary);
+  --cpk-theme-secondary-fg: var(--secondary-foreground);
+  --cpk-theme-muted: var(--muted);
+  --cpk-theme-muted-fg: var(--muted-foreground);
+  --cpk-theme-accent: var(--accent);
+  --cpk-theme-accent-fg: var(--accent-foreground);
+  --cpk-theme-destructive: var(--destructive);
+  --cpk-theme-border: var(--border);
+  --cpk-theme-input: var(--input);
+  --cpk-theme-ring: var(--ring);
+}
+
+.ai-chat-panel [data-copilotkit] {
+  --background: var(--cpk-theme-bg);
+  --foreground: var(--cpk-theme-fg);
+  --card: var(--cpk-theme-card);
+  --card-foreground: var(--cpk-theme-card-fg);
+  --popover: var(--cpk-theme-popover);
+  --popover-foreground: var(--cpk-theme-popover-fg);
+  --primary: var(--cpk-theme-primary);
+  --primary-foreground: var(--cpk-theme-primary-fg);
+  --secondary: var(--cpk-theme-secondary);
+  --secondary-foreground: var(--cpk-theme-secondary-fg);
+  --muted: var(--cpk-theme-muted);
+  --muted-foreground: var(--cpk-theme-muted-fg);
+  --accent: var(--cpk-theme-accent);
+  --accent-foreground: var(--cpk-theme-accent-fg);
+  --destructive: var(--cpk-theme-destructive);
+  --border: var(--cpk-theme-border);
+  --input: var(--cpk-theme-input);
+  --ring: var(--cpk-theme-ring);
+}
+
+/* CopilotKit hardcoded dark surfaces → app background */
+.dark .ai-chat-panel [data-copilotkit] .cpk\:bg-black {
+  background-color: var(--background) !important;
+}
+
+.dark .ai-chat-panel [data-copilotkit] .cpk\:dark\:bg-\[\#1f1f1f\],
+.dark .ai-chat-panel [data-copilotkit] .cpk\:dark\:bg-\[\#2f2f2f\],
+.dark .ai-chat-panel [data-copilotkit] .cpk\:dark\:bg-\[\#303030\] {
+  background-color: var(--background) !important;
+}
+
+.dark .ai-chat-panel [data-copilotkit] .cpk\:dark\:bg-gray-900 {
+  background-color: var(--background) !important;
+}
+
+.dark .ai-chat-panel [data-copilotkit] .cpk\:dark\:bg-zinc-900\/50,
+.dark .ai-chat-panel [data-copilotkit] .cpk\:dark\:bg-zinc-800\/60,
+.dark .ai-chat-panel [data-copilotkit] .cpk\:dark\:bg-zinc-700\/40 {
+  background-color: var(--background) !important;
+}
+
+.dark .ai-chat-panel [data-copilotkit] .cpk\:dark\:from-\[rgb\(33\,33\,33\)\] {
+  --tw-gradient-from: var(--background) !important;
+}
+
+.dark .ai-chat-panel [data-copilotkit] .cpk\:dark\:via-\[rgb\(33\,33\,33\)\] {
+  --tw-gradient-via: var(--background) !important;
+}

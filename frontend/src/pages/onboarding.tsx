@@ -35,11 +35,22 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-6">
-      <BrandLogo size="lg" />
-      <Button onClick={handleSignIn} disabled={busy}>
-        {busy ? "Signing in…" : "Sign in"}
-      </Button>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#003366] to-[#001733] relative overflow-hidden">
+      {/* Decorative large faint text in the background */}
+      <div className="absolute inset-0 flex items-center justify-center select-none pointer-events-none opacity-[0.03]">
+         <span className="text-[20vw] font-black text-white leading-none tracking-tighter mix-blend-overlay">SJSU</span>
+      </div>
+
+      <div className="relative z-10 flex flex-col items-center justify-center gap-8 p-12 rounded-3xl bg-white/5 border border-white/10 shadow-2xl backdrop-blur-md">
+        <BrandLogo size="lg" sjsuColors={true} />
+        <Button 
+          onClick={handleSignIn} 
+          disabled={busy}
+          className="w-[200px] h-12 text-base font-semibold bg-[#E5A823] hover:bg-[#D4981C] text-[#001A36] border-none shadow-[0_4px_14px_0_rgba(229,168,35,0.39)] hover:shadow-[0_6px_20px_rgba(229,168,35,0.23)] hover:-translate-y-0.5 transition-all duration-200"
+        >
+          {busy ? "Signing in…" : "Sign in"}
+        </Button>
+      </div>
     </div>
   );
 }
